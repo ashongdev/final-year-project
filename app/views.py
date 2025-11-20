@@ -21,8 +21,7 @@ def upload(request):
     ext = file.name.split(".")[-1]
     unique_name = f"{uuid.uuid4()}.{ext}"
     file_name = default_storage.save(f"uploads/{unique_name}", ContentFile(file.read()))
-    file_path = default_storage.path(file_name)
-    print("Saved at:", file_path)
+    default_storage.path(file_name)
 
     return Response({"fileName": unique_name})
 
@@ -31,37 +30,40 @@ def upload(request):
 def generate(request):
     data = request.data
     file_name = data.get("fileName")
-    print(file_name)
+    recipients = data.get("recipients")
+
     cert_template = Image.open(f"uploads/{file_name}")
-
-    text_position = data.get("textPosition")
-
-    x_axis = text_position["x"]
-    y_axis = text_position["y"]
+    y_axis = data.get("textPosition")["y"]
+    x_axis = data.get("textPosition")["x"]
     selected_font = data.get("selectedFont")
-    font_size = data.get("fontSize")
-    # font_weight = data.get("fontWeight")
+    font_size = int(data.get("fontSize"))
     text_color = data.get("textColor")
 
     if os.path.exists("certificates"):
         shutil.rmtree("certificates")
-    else:
-        os.makedirs("certificates", exist_ok=True)
+    os.makedirs("certificates", exist_ok=True)
 
-    font_size = int(font_size)
-
-    font_path = f"{selected_font}.ttf"
+    font_path = f"fonts/{selected_font}.ttf"
     font = ImageFont.truetype(font_path, font_size)
-    print(font_size)
 
-    img = cert_template.copy()
-    draw = ImageDraw.Draw(img)
+    for recipient in recipients:
+        name = recipient["name"]
 
-    draw.text((x_axis + 40, y_axis + 40), "John Doe", fill=text_color, font=font)
-    os.makedirs("certificates/", exist_ok=True)
+        img = cert_template.copy()
+        draw = ImageDraw.Draw(img)
 
-    file_name = file_name.split(".")[0]
-    output_path = f"certificates/{file_name}.png"
-    img.save(output_path)
+        text_w, text_h = draw.textbbox((0, 0), name, font=font)[2:]
+        x_center = x_axis
+        y_center = y_axis
+
+        draw.text(
+            (x_center - text_w / 2, y_center - text_h / 2),
+            name,
+            font=font,
+            fill=text_color,
+        )
+
+        output_path = f"certificates/{name}.png"
+        img.save(output_path)
 
     return Response({"response": "Hello World"})
