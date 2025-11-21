@@ -31,6 +31,7 @@ def generate(request):
     data = request.data
     file_name = data.get("fileName")
     recipients = data.get("recipients")
+    anchor_mode = data.get("anchorMode", "center")
 
     cert_template = Image.open(f"uploads/{file_name}")
     y_axis = data.get("textPosition")["y"]
@@ -52,12 +53,23 @@ def generate(request):
         img = cert_template.copy()
         draw = ImageDraw.Draw(img)
 
-        text_w, text_h = draw.textbbox((0, 0), name, font=font)[2:]
-        x_center = x_axis
-        y_center = y_axis
+        # Get the full bounding box
+        bbox = draw.textbbox((0, 0), name, font=font)
+        text_left, text_top, text_right, text_bottom = bbox
+        text_w = text_right - text_left
+        text_h = text_bottom - text_top
+
+        if anchor_mode == "center":
+            # Center the text, accounting for bbox offset
+            x_draw = x_axis - text_w / 2 - text_left
+            y_draw = y_axis - text_h / 2 - text_top
+        else:
+            # Top-left anchor, accounting for bbox offset
+            x_draw = x_axis - text_left
+            y_draw = y_axis - text_top
 
         draw.text(
-            (x_center - text_w / 2, y_center - text_h / 2),
+            (x_draw, y_draw),
             name,
             font=font,
             fill=text_color,
@@ -66,4 +78,4 @@ def generate(request):
         output_path = f"certificates/{name}.png"
         img.save(output_path)
 
-    return Response({"response": "Hello World"})
+    return Response({"response": "Certificates generated successfully"})
