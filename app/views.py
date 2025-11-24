@@ -4,9 +4,15 @@ import uuid
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from dotenv import load_dotenv
+from mailersend import EmailBuilder, MailerSendClient
 from PIL import Image, ImageDraw, ImageFont
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
+load_dotenv()
+
+MAILERSEND_API_KEY = os.getenv("MAILERSEND_API_KEY")
 
 
 # Create your views here.
@@ -26,6 +32,9 @@ def upload(request):
     return Response({"fileName": unique_name})
 
 
+ms = MailerSendClient(api_key=MAILERSEND_API_KEY)
+
+
 @api_view(["POST"])
 def generate(request):
     data = request.data
@@ -40,15 +49,16 @@ def generate(request):
     font_size = int(data.get("fontSize"))
     text_color = data.get("textColor")
 
-    if os.path.exists("certificates"):
-        shutil.rmtree("certificates")
-    os.makedirs("certificates", exist_ok=True)
+    # if os.path.exists("certificates"):
+    #     shutil.rmtree("certificates")
+    # os.makedirs("certificates", exist_ok=True)
 
     font_path = f"fonts/{selected_font}.ttf"
     font = ImageFont.truetype(font_path, font_size)
 
     for recipient in recipients:
         name = recipient["name"]
+        recipient_email = recipient["email"]
 
         img = cert_template.copy()
         draw = ImageDraw.Draw(img)
@@ -76,6 +86,18 @@ def generate(request):
         )
 
         output_path = f"certificates/{name}.png"
-        img.save(output_path)
+        # img.save(output_path)
+
+        email = (
+            EmailBuilder()
+            .from_email("no-reply@ashongdev.me", "Cert Generator")
+            .to_many([{"email": recipient_email, "name": name}])
+            .subject("Here's your generated certificate.")
+            .html("<h1>Hello World!</h1>")
+            .attach_file(output_path)
+            .build()
+        )
+
+        ms.emails.send(email)
 
     return Response({"response": "Certificates generated successfully"})
