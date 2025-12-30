@@ -1,9 +1,7 @@
 import os
-import shutil
 from io import BytesIO
 
 import cloudinary
-import cloudinary.api
 import cloudinary.uploader
 import requests
 from django.http import HttpResponse
@@ -30,11 +28,6 @@ cloudinary.config(
 # Create your views here.
 @api_view(["POST"])
 def upload(request):
-    if os.path.exists("uploads"):
-        shutil.rmtree("uploads")
-    else:
-        os.makedirs("uploads", exist_ok=True)
-
     file = request.FILES.get("template")
     public_id = request.data.get("public_id")
 
