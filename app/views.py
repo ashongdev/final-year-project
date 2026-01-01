@@ -1,7 +1,10 @@
+import json
 import os
 from io import BytesIO
 
 import cloudinary
+import cloudinary.api
+import cloudinary.exceptions
 import cloudinary.uploader
 import requests
 from django.http import HttpResponse
@@ -109,28 +112,83 @@ def upload(request):
 
 
 @api_view(["POST"])
+def check_public_id(request):
+    public_id = request.data.get("public_id")
+
+    if not public_id:
+        return Response({"error": "public_id is required"}, status=400)
+
+    try:
+        cloudinary.api.resource(public_id, resource_type="image")
+        # If this succeeds, the asset EXISTS
+        return Response({"exists": True}, status=200)
+
+    except cloudinary.exceptions.NotFound:
+        # Asset does NOT exist
+        return Response({"exists": False}, status=200)
+
+
+def parse_json_field(value, default=None):
+    if value is None:
+        return default
+    if isinstance(value, (dict, list)):
+        return value
+    return json.loads(value)
+
+
+@api_view(["POST"])
 def generate(request):
     data = request.data
     public_id = data.get("certificateId")
     name = data.get("participantName")
     anchor_mode = data.get("anchorMode", "center")
-
-    url = f"https://res.cloudinary.com/{CLOUDINARY_CLOUD_NAME}/image/upload/{public_id}.png"
-
-    response = requests.get(url)
-
-    image = Image.open(BytesIO(response.content)).convert("RGBA")
-
-    y_axis = data.get("textPosition")["y"]
-    x_axis = data.get("textPosition")["x"]
+    in_editor = data.get("inEditor") == "true"
+    text_position = parse_json_field(data.get("textPosition"), {})
     selected_font = data.get("selectedFont")
     font_size = int(data.get("fontSize"))
     text_color = data.get("textColor")
-
     font_path = f"fonts/{selected_font}.ttf"
+
     font = ImageFont.truetype(font_path, font_size)
 
-    # img = cert_template.copy()
+    y_axis = int(text_position["y"])  # type: ignore
+    x_axis = int(text_position["x"])  # type: ignore
+
+    if not in_editor:
+        url = f"https://res.cloudinary.com/{CLOUDINARY_CLOUD_NAME}/image/upload/{public_id}.png"
+
+        response = requests.get(url)
+
+        image = Image.open(BytesIO(response.content)).convert("RGBA")
+
+        buffer = process_image(
+            image, name, font, anchor_mode, x_axis, y_axis, text_color
+        )
+
+        return HttpResponse(
+            buffer,
+            content_type="image/png",
+            headers={"Content-Disposition": f'attachment; filename="{name}.png"'},
+        )
+    else:
+        template_file = request.FILES.get("template")
+        if not template_file:
+            return Response({"error": "Template is required"}, status=400)
+
+        # Load image directly from uploaded file
+        image = Image.open(template_file).convert("RGBA")
+
+        buffer = process_image(
+            image, name, font, anchor_mode, x_axis, y_axis, text_color
+        )
+        return HttpResponse(
+            buffer,
+            content_type="image/png",
+            headers={"Content-Disposition": f'attachment; filename="{name}.png"'},
+        )
+
+
+def process_image(image, name, font, anchor_mode, x_axis, y_axis, text_color):
     draw = ImageDraw.Draw(image)
 
     bbox = draw.textbbox((0, 0), name, font=font)
@@ -147,13 +205,8 @@ def generate(request):
 
     draw.text((x_draw, y_draw), name, font=font, fill=text_color)
 
-    # Save image to in-memory buffer
     buffer = BytesIO()
     image.save(buffer, format="PNG")
     buffer.seek(0)
 
-    return HttpResponse(
-        buffer,
-        content_type="image/png",
-        headers={"Content-Disposition": f'attachment; filename="{name}.png"'},
-    )
+    return buffer
