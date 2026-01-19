@@ -13,6 +13,8 @@ from PIL import Image, ImageDraw, ImageFont
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from .models import CertificatePreset
+
 load_dotenv()
 
 CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET")
@@ -45,6 +47,22 @@ def upload(request):
 
     # Upload directly from memory
     result = cloudinary.uploader.upload(buffer, public_id=public_id)
+
+    # Save presets
+    CertificatePreset.objects.update_or_create(
+        public_id=result["public_id"],
+        defaults={
+            "selected_font": request.data.get(
+                "selectedFont", "Bickham Script Pro Regular"
+            ),
+            "font_size": int(request.data.get("fontSize", 48)),
+            "font_weight": request.data.get("fontWeight", "400"),
+            "text_color": request.data.get("textColor", "#000000"),
+            "text_x": int(request.data.get("x", 0)),
+            "text_y": int(request.data.get("y", 0)),
+            "anchor_mode": request.data.get("anchorMode", "center"),
+        },
+    )
 
     return Response(
         {"public_id": result["public_id"], "secure_url": result["secure_url"]}
@@ -126,6 +144,25 @@ def check_public_id(request):
     except cloudinary.exceptions.NotFound:
         # Asset does NOT exist
         return Response({"exists": False}, status=200)
+
+
+@api_view(["GET"])
+def get_preset(request, public_id):
+    try:
+        preset = CertificatePreset.objects.get(public_id=public_id)
+        return Response(
+            {
+                "selectedFont": preset.selected_font,
+                "fontSize": preset.font_size,
+                "fontWeight": preset.font_weight,
+                "textColor": preset.text_color,
+                "textPosition": {"x": preset.text_x, "y": preset.text_y},
+                "anchorMode": preset.anchor_mode,
+            },
+            status=200,
+        )
+    except CertificatePreset.DoesNotExist:
+        return Response({"error": "Preset not found"}, status=404)
 
 
 def parse_json_field(value, default=None):
