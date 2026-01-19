@@ -236,11 +236,10 @@ def process_image(image, name, font, anchor_mode, x_axis, y_axis, text_color):
     if anchor_mode == "center":
         x_draw = x_axis - text_w / 2 - text_left
         y_draw = y_axis - text_h / 2 - text_top
+        # For center mode, standard drawing is fine
+        draw.text((x_draw, y_draw), name, font=font, fill=text_color)
     else:
-        x_draw = x_axis - text_left
-        y_draw = y_axis - text_top
-
-    draw.text((x_draw, y_draw), name, font=font, fill=text_color)
+        draw.text((x_axis, y_axis), name, font=font, fill=text_color, anchor="la")
 
     buffer = BytesIO()
     image.save(buffer, format="PNG")
