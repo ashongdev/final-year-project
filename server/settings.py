@@ -60,7 +60,7 @@ ROOT_URLCONF = "server.urls"
 
 CORS_ALLOWED_ORIGINS = ["http://localhost:8080", "https://blank-canvas-iota.vercel.app"]
 
-ALLOWED_HOSTS = ["ashong.pythonanywhere.com"]
+ALLOWED_HOSTS = ["ashong.pythonanywhere.com", "127.0.0.1"]
 
 TEMPLATES = [
     {
