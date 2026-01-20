@@ -60,7 +60,7 @@ ROOT_URLCONF = "server.urls"
 
 CORS_ALLOWED_ORIGINS = ["http://localhost:8080"]
 
-ALLOWED_HOSTS = ["cbf010ac6986.ngrok-free.app", "127.0.0.1"]
+ALLOWED_HOSTS = ["ashong.pythonanywhere.com"]
 
 TEMPLATES = [
     {
