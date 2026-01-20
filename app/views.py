@@ -7,7 +7,6 @@ import cloudinary.api
 import cloudinary.exceptions
 import cloudinary.uploader
 import requests
-from django.http import HttpResponse
 from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
 from rest_framework.decorators import api_view
@@ -219,9 +218,11 @@ def generate(request):
         buffer = process_image(
             image, name, font, anchor_mode, x_axis, y_axis, text_color
         )
+        image_data = buffer.getvalue()
+        buffer.close()
 
-        return HttpResponse(
-            buffer,
+        return Response(
+            image_data,
             content_type="image/png",
             headers={"Content-Disposition": f'attachment; filename="{name}.png"'},
         )
@@ -236,8 +237,11 @@ def generate(request):
         buffer = process_image(
             image, name, font, anchor_mode, x_axis, y_axis, text_color
         )
-        return HttpResponse(
-            buffer,
+        image_data = buffer.getvalue()
+        buffer.close()
+
+        return Response(
+            image_data,
             content_type="image/png",
             headers={"Content-Disposition": f'attachment; filename="{name}.png"'},
         )

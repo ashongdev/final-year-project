@@ -53,7 +53,6 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
-    "django.middleware.common.CommonMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -72,7 +71,7 @@ CORS_ALLOW_METHODS = [
 ]
 
 CORS_ALLOWED_ORIGINS = ["http://localhost:8080", "https://blank-canvas-iota.vercel.app"]
-
+CORS_EXPOSE_HEADERS = ["Content-Disposition"]
 ALLOWED_HOSTS = [
     "cert.ashong.dev",
     "localhost",
