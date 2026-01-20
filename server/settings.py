@@ -27,7 +27,8 @@ DEBUG = True
 
 # Tell Django that the Tunnel is secure
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
 # Add your production domain to Trusted Origins (for CSRF/POST requests)
 CSRF_TRUSTED_ORIGINS = [
     "https://cert.ashong.dev",
