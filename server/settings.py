@@ -65,6 +65,12 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "server.urls"
 
+CORS_ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "OPTIONS",
+]
+
 CORS_ALLOWED_ORIGINS = ["http://localhost:8080", "https://blank-canvas-iota.vercel.app"]
 
 ALLOWED_HOSTS = [
