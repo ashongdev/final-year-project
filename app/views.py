@@ -196,6 +196,19 @@ def generate(request):
 
         response = requests.get(url)
 
+        if response.status_code != 200:
+            return Response(
+                {"error": "Failed to fetch certificate template"},
+                status=502,
+            )
+
+        content_type = response.headers.get("Content-Type", "")
+        if not content_type.startswith("image/"):
+            return Response(
+                {"error": "Cloudinary did not return an image"},
+                status=502,
+            )
+
         image = Image.open(BytesIO(response.content)).convert("RGBA")
 
         buffer = process_image(
