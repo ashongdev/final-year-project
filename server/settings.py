@@ -69,6 +69,8 @@ CORS_ALLOW_METHODS = [
     "POST",
     "OPTIONS",
 ]
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
 CORS_ALLOWED_ORIGINS = ["http://localhost:8080", "https://blank-canvas-iota.vercel.app"]
 CORS_EXPOSE_HEADERS = ["Content-Disposition"]
