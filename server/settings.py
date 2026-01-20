@@ -72,6 +72,7 @@ ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
     "192.168.1.235",
+    "172.20.10.4",
     "192.168.1.59",
     "ashong.pythonanywhere.com",
 ]
