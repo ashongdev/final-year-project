@@ -31,6 +31,11 @@ cloudinary.config(
 
 
 # Create your views here.
+@api_view(["GET"])
+def test_route(request):
+    return Response({"message": "Hello World from RaspberryPi"})
+
+
 @api_view(["POST"])
 def upload(request):
     file = request.FILES.get("template")
