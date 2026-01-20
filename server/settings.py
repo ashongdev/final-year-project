@@ -58,7 +58,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "server.urls"
 
-CORS_ALLOWED_ORIGINS = ["http://localhost:8080"]
+CORS_ALLOWED_ORIGINS = ["http://localhost:8080", "https://blank-canvas-iota.vercel.app"]
 
 ALLOWED_HOSTS = ["ashong.pythonanywhere.com"]
 
