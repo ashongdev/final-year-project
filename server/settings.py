@@ -23,9 +23,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-rmngjhj3(+erx-tq&06&l9$m$xwot$e9!rl7^_=3+x+)7-7l=+"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
+# Tell Django that the Tunnel is secure
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Add your production domain to Trusted Origins (for CSRF/POST requests)
 CSRF_TRUSTED_ORIGINS = [
+    "https://cert.ashong.dev",
+    "http://localhost:8080",
     "http://localhost:8080",
     "http://127.0.0.1:8080",
 ]
