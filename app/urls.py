@@ -3,7 +3,7 @@ from django.urls import path
 from .views import check_public_id, generate, get_preset, test_route, upload
 
 urlpatterns = [
-    path("/", test_route, name="upload"),
+    path("", test_route, name="upload"),
     path("upload/", upload, name="upload"),
     path("generate/", generate, name="generate"),
     path("check_public_id/", check_public_id, name="check_public_id"),
