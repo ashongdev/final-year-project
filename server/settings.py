@@ -60,8 +60,14 @@ ROOT_URLCONF = "server.urls"
 
 CORS_ALLOWED_ORIGINS = ["http://localhost:8080", "https://blank-canvas-iota.vercel.app"]
 
-ALLOWED_HOSTS = ["ashong.pythonanywhere.com", "127.0.0.1"]
-
+ALLOWED_HOSTS = [
+    "cert.ashong.dev",
+    "localhost",
+    "127.0.0.1",
+    "192.168.1.235",
+    "192.168.1.59",
+    "ashong.pythonanywhere.com",
+]
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
