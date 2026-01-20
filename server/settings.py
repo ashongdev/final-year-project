@@ -32,6 +32,7 @@ USE_X_FORWARDED_PORT = True
 # Add your production domain to Trusted Origins (for CSRF/POST requests)
 CSRF_TRUSTED_ORIGINS = [
     "https://cert.ashong.dev",
+    "https://genc.ashong.dev",
     "http://localhost:8080",
     "http://localhost:8080",
     "http://127.0.0.1:8080",
@@ -74,14 +75,10 @@ CSRF_COOKIE_SECURE = True
 CORS_PREFLIGHT_MAX_AGE = 86400
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:8080",
-#     "https://blank-canvas-iota.vercel.app",
-#     "https://blank-canvas-iota.vercel.app/",
-# ]
 CORS_EXPOSE_HEADERS = ["Content-Disposition"]
 ALLOWED_HOSTS = [
     "cert.ashong.dev",
+    "genc.ashong.dev",
     "localhost",
     "127.0.0.1",
     "192.168.1.235",
