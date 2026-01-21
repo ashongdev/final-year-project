@@ -251,28 +251,19 @@ def generate(request):
 def process_image(image, name, font, anchor_mode, x_axis, y_axis, text_color):
     draw = ImageDraw.Draw(image)
 
-    # Use font metrics for stable vertical alignment that matches "line box" behavior better than bbox
-    ascent, descent = font.getmetrics()
-
-    # Calculate box height based on font metrics (Ascent + Descent)
-    # This roughly corresponds to the content area height in CSS
-    text_height = ascent + descent
-
     if anchor_mode == "center":
-        # Center: (x, y) is the visual center.
-        # We want to align the midpoint of the text_height to y.
-        # Baseline is at y - (text_height / 2) + ascent
-        y_baseline = y_axis - (text_height / 2) + ascent
-        draw.text((x_axis, y_baseline), name, font=font, fill=text_color, anchor="ms")
+        bbox = draw.textbbox((0, 0), name, font=font)
+        text_left, text_top, text_right, text_bottom = bbox
+        text_w = text_right - text_left
+        text_h = text_bottom - text_top
+
+        x_draw = x_axis - text_w / 2 - text_left
+        y_draw = y_axis - text_h / 2 - text_top
+        draw.text((x_draw, y_draw), name, font=font, fill=text_color)
     else:
-        # Left: (x, y) is Top Left.
-        # We want to align the top of text_height to y.
-        # Baseline is at y + ascent
-        y_baseline = y_axis + ascent
-        draw.text((x_axis, y_baseline), name, font=font, fill=text_color, anchor="ls")
+        draw.text((x_axis, y_axis - 10), name, font=font, fill=text_color, anchor="lt")
 
     buffer = BytesIO()
     image.save(buffer, format="PNG")
     buffer.seek(0)
-
     return buffer
