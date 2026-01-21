@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw, ImageFont
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from .models import CertificatePreset
+# from .models import CertificatePreset
 
 load_dotenv()
 
@@ -54,20 +54,20 @@ def upload(request):
     result = cloudinary.uploader.upload(buffer, public_id=public_id)
 
     # Save presets
-    CertificatePreset.objects.update_or_create(
-        public_id=result["public_id"],
-        defaults={
-            "selected_font": request.data.get(
-                "selectedFont", "Bickham Script Pro Regular"
-            ),
-            "font_size": int(request.data.get("fontSize", 48)),
-            "font_weight": request.data.get("fontWeight", "400"),
-            "text_color": request.data.get("textColor", "#000000"),
-            "text_x": int(request.data.get("x", 0)),
-            "text_y": int(request.data.get("y", 0)),
-            "anchor_mode": request.data.get("anchorMode", "center"),
-        },
-    )
+    # CertificatePreset.objects.update_or_create(
+    #     public_id=result["public_id"],
+    #     defaults={
+    #         "selected_font": request.data.get(
+    #             "selectedFont", "Bickham Script Pro Regular"
+    #         ),
+    #         "font_size": int(request.data.get("fontSize", 48)),
+    #         "font_weight": request.data.get("fontWeight", "400"),
+    #         "text_color": request.data.get("textColor", "#000000"),
+    #         "text_x": int(request.data.get("x", 0)),
+    #         "text_y": int(request.data.get("y", 0)),
+    #         "anchor_mode": request.data.get("anchorMode", "center"),
+    #     },
+    # )
 
     return Response(
         {"public_id": result["public_id"], "secure_url": result["secure_url"]}
@@ -151,23 +151,23 @@ def check_public_id(request):
         return Response({"exists": False}, status=200)
 
 
-@api_view(["GET"])
-def get_preset(request, public_id):
-    try:
-        preset = CertificatePreset.objects.get(public_id=public_id)
-        return Response(
-            {
-                "selectedFont": preset.selected_font,
-                "fontSize": preset.font_size,
-                "fontWeight": preset.font_weight,
-                "textColor": preset.text_color,
-                "textPosition": {"x": preset.text_x, "y": preset.text_y},
-                "anchorMode": preset.anchor_mode,
-            },
-            status=200,
-        )
-    except CertificatePreset.DoesNotExist:
-        return Response({"error": "Preset not found"}, status=404)
+# @api_view(["GET"])
+# def get_preset(request, public_id):
+#     try:
+#         preset = CertificatePreset.objects.get(public_id=public_id)
+#         return Response(
+#             {
+#                 "selectedFont": preset.selected_font,
+#                 "fontSize": preset.font_size,
+#                 "fontWeight": preset.font_weight,
+#                 "textColor": preset.text_color,
+#                 "textPosition": {"x": preset.text_x, "y": preset.text_y},
+#                 "anchorMode": preset.anchor_mode,
+#             },
+#             status=200,
+#         )
+#     except CertificatePreset.DoesNotExist:
+#         return Response({"error": "Preset not found"}, status=404)
 
 
 def parse_json_field(value, default=None):
@@ -251,18 +251,25 @@ def generate(request):
 def process_image(image, name, font, anchor_mode, x_axis, y_axis, text_color):
     draw = ImageDraw.Draw(image)
 
-    bbox = draw.textbbox((0, 0), name, font=font)
-    text_left, text_top, text_right, text_bottom = bbox
-    text_w = text_right - text_left
-    text_h = text_bottom - text_top
+    # Use font metrics for stable vertical alignment that matches "line box" behavior better than bbox
+    ascent, descent = font.getmetrics()
+
+    # Calculate box height based on font metrics (Ascent + Descent)
+    # This roughly corresponds to the content area height in CSS
+    text_height = ascent + descent
 
     if anchor_mode == "center":
-        x_draw = x_axis - text_w / 2 - text_left
-        y_draw = y_axis - text_h / 2 - text_top
-        # For center mode, standard drawing is fine
-        draw.text((x_draw, y_draw), name, font=font, fill=text_color)
+        # Center: (x, y) is the visual center.
+        # We want to align the midpoint of the text_height to y.
+        # Baseline is at y - (text_height / 2) + ascent
+        y_baseline = y_axis - (text_height / 2) + ascent
+        draw.text((x_axis, y_baseline), name, font=font, fill=text_color, anchor="ms")
     else:
-        draw.text((x_axis, y_axis), name, font=font, fill=text_color, anchor="la")
+        # Left: (x, y) is Top Left.
+        # We want to align the top of text_height to y.
+        # Baseline is at y + ascent
+        y_baseline = y_axis + ascent
+        draw.text((x_axis, y_baseline), name, font=font, fill=text_color, anchor="ls")
 
     buffer = BytesIO()
     image.save(buffer, format="PNG")
