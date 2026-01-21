@@ -5,4 +5,4 @@ service_account.json
 names.csv
 uploads
 certificates
-db.sqlite3
+db.sqlite3start_django.sh
