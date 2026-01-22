@@ -6,7 +6,7 @@
 #     selected_font = models.CharField(
 #         max_length=255, default="Bickham Script Pro Regular"
 #     )
-#     font_size = models.IntegerField(default=48)
+#     font_size = models.IntegerField(default=100)
 #     font_weight = models.CharField(max_length=50, default="400")
 #     text_color = models.CharField(max_length=50, default="#000000")
 #     text_x = models.IntegerField(default=0)

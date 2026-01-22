@@ -60,7 +60,7 @@ def upload(request):
     #         "selected_font": request.data.get(
     #             "selectedFont", "Bickham Script Pro Regular"
     #         ),
-    #         "font_size": int(request.data.get("fontSize", 48)),
+    #         "font_size": int(request.data.get("fontSize", 100)),
     #         "font_weight": request.data.get("fontWeight", "400"),
     #         "text_color": request.data.get("textColor", "#000000"),
     #         "text_x": int(request.data.get("x", 0)),
@@ -194,7 +194,7 @@ def generate(request):
             "x": int(parse_json_field(data.get("textPosition"), {}).get("x", 0)),  # type: ignore
             "y": int(parse_json_field(data.get("textPosition"), {}).get("y", 0)),  # type: ignore
             "font": data.get("selectedFont", "Bickham Script Pro Regular"),
-            "fontSize": int(data.get("fontSize", 48)),
+            "fontSize": int(data.get("fontSize", 100)),
             "color": data.get("textColor", "#000000"),
             "anchorMode": data.get("anchorMode", "center"),
         }
@@ -250,7 +250,7 @@ def process_image(image, fields):
     for field in fields:
         text = field.get("text", "")
         font_name = field.get("font", "Bickham Script Pro Regular")
-        font_size = int(field.get("fontSize", 48))
+        font_size = int(field.get("fontSize", 100))
         color = field.get("color", "#000000")
         x_axis = int(field.get("x", 0))
         y_axis = int(field.get("y", 0))
