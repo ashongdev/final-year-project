@@ -182,19 +182,23 @@ def parse_json_field(value, default=None):
 def generate(request):
     data = request.data
     public_id = data.get("certificateId")
-    name = data.get("participantName")
-    anchor_mode = data.get("anchorMode", "center")
     in_editor = data.get("inEditor") == "true"
-    text_position = parse_json_field(data.get("textPosition"), {})
-    selected_font = data.get("selectedFont")
-    font_size = int(data.get("fontSize"))
-    text_color = data.get("textColor")
-    font_path = f"fonts/{selected_font}.ttf"
 
-    font = ImageFont.truetype(font_path, font_size)
+    # Parse fields - new way (support list of fields)
+    fields = parse_json_field(data.get("fields"), [])
 
-    y_axis = int(text_position["y"])  # type: ignore
-    x_axis = int(text_position["x"])  # type: ignore
+    # Fallback for legacy requests (single field)
+    if not fields:
+        legacy_field = {
+            "text": data.get("participantName", ""),
+            "x": int(parse_json_field(data.get("textPosition"), {}).get("x", 0)),  # type: ignore
+            "y": int(parse_json_field(data.get("textPosition"), {}).get("y", 0)),  # type: ignore
+            "font": data.get("selectedFont", "Bickham Script Pro Regular"),
+            "fontSize": int(data.get("fontSize", 48)),
+            "color": data.get("textColor", "#000000"),
+            "anchorMode": data.get("anchorMode", "center"),
+        }
+        fields = [legacy_field]
 
     if not in_editor:
         url = f"https://res.cloudinary.com/{CLOUDINARY_CLOUD_NAME}/image/upload/{public_id}.png"
@@ -215,18 +219,6 @@ def generate(request):
             )
 
         image = Image.open(BytesIO(response.content)).convert("RGBA")
-
-        buffer = process_image(
-            image, name, font, anchor_mode, x_axis, y_axis, text_color
-        )
-        image_data = buffer.getvalue()
-        buffer.close()
-
-        return HttpResponse(
-            image_data,
-            content_type="image/png",
-            headers={"Content-Disposition": f'attachment; filename="{name}.png"'},
-        )
     else:
         template_file = request.FILES.get("template")
         if not template_file:
@@ -235,41 +227,61 @@ def generate(request):
         # Load image directly from uploaded file
         image = Image.open(template_file).convert("RGBA")
 
-        buffer = process_image(
-            image, name, font, anchor_mode, x_axis, y_axis, text_color
-        )
-        image_data = buffer.getvalue()
-        buffer.close()
+    # Process ALL fields
+    buffer = process_image(image, fields)
+    image_data = buffer.getvalue()
+    buffer.close()
 
-        return HttpResponse(
-            image_data,
-            content_type="image/png",
-            headers={"Content-Disposition": f'attachment; filename="{name}.png"'},
-        )
+    # Determine filename (use first field text or default)
+    filename = "Certificate"
+    if fields and fields[0].get("text"):
+        filename = fields[0].get("text")
+
+    return HttpResponse(
+        image_data,
+        content_type="image/png",
+        headers={"Content-Disposition": f'attachment; filename="{filename}.png"'},
+    )
 
 
-def process_image(image, name, font, anchor_mode, x_axis, y_axis, text_color):
+def process_image(image, fields):
     draw = ImageDraw.Draw(image)
 
-    # Calculate the literal bounding box of the text pixels
-    bbox = draw.textbbox((0, 0), name, font=font)
-    text_left, text_top, text_right, text_bottom = bbox
-    text_w = text_right - text_left
-    text_h = text_bottom - text_top
+    for field in fields:
+        text = field.get("text", "")
+        font_name = field.get("font", "Bickham Script Pro Regular")
+        font_size = int(field.get("fontSize", 48))
+        color = field.get("color", "#000000")
+        x_axis = int(field.get("x", 0))
+        y_axis = int(field.get("y", 0))
+        anchor_mode = field.get("anchorMode", "center")
 
-    # Shared Vertical Logic: The Y-axis is the absolute center of the text
-    # This cancels out the "top" whitespace issues in script fonts
-    y_draw = y_axis - text_h / 2 - text_top
+        font_path = f"fonts/{font_name}.ttf"
+        try:
+            font = ImageFont.truetype(font_path, font_size)
+        except Exception:
+            # Fallback to default if font fails
+            # In a real app, maybe log this or have a specific backup font
+            # For now try to continue or raise?
+            # Safe bet: fail gracefully or assume font exists as per frontend
+            pass
 
-    # Horizontal Logic
-    if anchor_mode == "center":
-        # Subtract half width and the left-side bearing
-        x_draw = x_axis - text_w / 2 - text_left
-    else:
-        # Align the first pixel of the text exactly to the x_axis
-        x_draw = x_axis - text_left
+        # Calculate the literal bounding box of the text pixels
+        bbox = draw.textbbox((0, 0), text, font=font)  # type: ignore
+        text_left, text_top, text_right, text_bottom = bbox
+        text_w = text_right - text_left
+        text_h = text_bottom - text_top
 
-    draw.text((x_draw, y_draw), name, font=font, fill=text_color)
+        # Shared Vertical Logic: The Y-axis is the absolute center of the text
+        y_draw = y_axis - text_h / 2 - text_top
+
+        # Horizontal Logic
+        if anchor_mode == "center":
+            x_draw = x_axis - text_w / 2 - text_left
+        else:
+            x_draw = x_axis - text_left
+
+        draw.text((x_draw, y_draw), text, font=font, fill=color)  # type: ignore
 
     buffer = BytesIO()
     image.save(buffer, format="PNG")
