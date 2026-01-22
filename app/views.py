@@ -251,17 +251,17 @@ def generate(request):
 def process_image(image, name, font, anchor_mode, x_axis, y_axis, text_color):
     draw = ImageDraw.Draw(image)
 
-    # 1. Calculate the literal bounding box of the text pixels
+    # Calculate the literal bounding box of the text pixels
     bbox = draw.textbbox((0, 0), name, font=font)
     text_left, text_top, text_right, text_bottom = bbox
     text_w = text_right - text_left
     text_h = text_bottom - text_top
 
-    # 2. Shared Vertical Logic: The Y-axis is the absolute center of the text
+    # Shared Vertical Logic: The Y-axis is the absolute center of the text
     # This cancels out the "top" whitespace issues in script fonts
     y_draw = y_axis - text_h / 2 - text_top
 
-    # 3. Horizontal Logic
+    # Horizontal Logic
     if anchor_mode == "center":
         # Subtract half width and the left-side bearing
         x_draw = x_axis - text_w / 2 - text_left
