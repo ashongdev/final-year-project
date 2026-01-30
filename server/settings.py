@@ -80,6 +80,7 @@ ALLOWED_HOSTS = [
     "cert.ashong.dev",
     "genc.ashong.dev",
     "localhost",
+    "server-bow4.onrender.com",
     "127.0.0.1",
     "192.168.1.235",
     "172.20.10.4",
