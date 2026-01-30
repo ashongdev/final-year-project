@@ -35,7 +35,7 @@ last_run = None
 
 
 @api_view(["GET"])
-def test_route(request):
+def cron_job(request):
     global last_run
     now = timezone.now()
     # Skip if last run < 10 mins ago

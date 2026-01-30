@@ -1,9 +1,9 @@
 from django.urls import path
 
-from .views import check_public_id, generate, test_route, upload
+from .views import check_public_id, cron_job, generate, upload
 
 urlpatterns = [
-    path("", test_route, name="index"),
+    path("cron/", cron_job, name="cron"),
     path("upload/", upload, name="upload"),
     path("generate/", generate, name="generate"),
     path("check_public_id/", check_public_id, name="check_public_id"),
