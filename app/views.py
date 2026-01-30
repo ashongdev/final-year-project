@@ -8,6 +8,7 @@ import cloudinary.exceptions
 import cloudinary.uploader
 import requests
 from django.http import HttpResponse
+from django.utils import timezone
 from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
 from rest_framework.decorators import api_view
@@ -30,10 +31,22 @@ cloudinary.config(
 )
 
 
-# Create your views here.
+last_run = None
+
+
 @api_view(["GET"])
 def test_route(request):
-    return Response({"message": "Hello World from RaspberryPi"})
+    global last_run
+    now = timezone.now()
+    # Skip if last run < 10 mins ago
+    if last_run and (now - last_run).total_seconds() < 600:
+        return Response({"status": "skipped"})
+
+    last_run = now
+    # Your periodic logic here
+    print("Running periodic task")
+
+    return Response({"status": "success", "time": now})
 
 
 @api_view(["POST"])

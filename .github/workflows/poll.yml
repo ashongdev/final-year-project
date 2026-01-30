@@ -1,0 +1,13 @@
+name: Keep Server Alive
+
+on:
+    schedule:
+        - cron: "*/10 * * * *" # Runs every 10 minutes
+    workflow_dispatch: # Allows manual triggering
+
+jobs:
+    ping_server:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Hit Test Route
+              run: curl -X GET https://server-bow4.onrender.com/
