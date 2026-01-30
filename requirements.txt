@@ -1,0 +1,10 @@
+Django
+djangorestframework
+django-cors-headers
+cloudinary
+requests
+python-dotenv
+Pillow
+gspread
+pandas
+google-auth
