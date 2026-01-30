@@ -1,10 +1,8 @@
-Django
+Django>=4.2,<5.0
 djangorestframework
 django-cors-headers
 cloudinary
 requests
 python-dotenv
 Pillow
-gspread
-pandas
-google-auth
+gunicorn
