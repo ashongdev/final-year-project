@@ -11,7 +11,8 @@ from django.http import HttpResponse
 from django.utils import timezone
 from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 # from .models import CertificatePreset
@@ -35,18 +36,8 @@ last_run = None
 
 
 @api_view(["GET"])
-def cron_job(request):
-    global last_run
-    now = timezone.now()
-    # Skip if last run < 10 mins ago
-    if last_run and (now - last_run).total_seconds() < 600:
-        return Response({"status": "skipped"})
-
-    last_run = now
-    # Your periodic logic here
-    print("Running periodic task")
-
-    return Response({"status": "success", "time": now})
+def wake(request):
+    return Response({"status": "success", "time": timezone.now()})
 
 
 @api_view(["POST"])
