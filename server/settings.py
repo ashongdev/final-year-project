@@ -11,6 +11,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from os import getenv
+from dotenv import load_dotenv
+from datetime import timedelta
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,18 +34,19 @@ DEBUG = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
-# Add your production domain to Trusted Origins (for CSRF/POST requests)
+
 CSRF_TRUSTED_ORIGINS = [
     "https://cert.ashong.dev",
     "https://genc.ashong.dev",
     "http://localhost:8080",
-    "http://localhost:8080",
     "http://127.0.0.1:8080",
 ]
 
-# Application definition
+IS_PRODUCTION = not DEBUG
+
 APPEND_SLASH = True
 INSTALLED_APPS = [
+    "django.contrib.sites",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -48,8 +54,31 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "rest_framework.authtoken",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
+    "allauth.socialaccount.providers.github",
+    "dj_rest_auth",
+    "dj_rest_auth.registration",
     "corsheaders",
     "app",
+]
+
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "dj_rest_auth.jwt_auth.JWTCookieAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ),
+}
+
+SITE_ID = 1
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
 MIDDLEWARE = [
@@ -61,6 +90,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = "server.urls"
@@ -70,23 +100,20 @@ CORS_ALLOW_METHODS = [
     "POST",
     "OPTIONS",
 ]
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+
 CORS_PREFLIGHT_MAX_AGE = 86400
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_EXPOSE_HEADERS = ["Content-Disposition"]
+
 ALLOWED_HOSTS = [
     "cert.ashong.dev",
     "genc.ashong.dev",
     "localhost",
     "server-bow4.onrender.com",
     "127.0.0.1",
-    "192.168.1.235",
-    "172.20.10.4",
-    "192.168.1.59",
-    "ashong.pythonanywhere.com",
 ]
+
 CORS_ALLOW_HEADERS = [
     "accept",
     "accept-encoding",
@@ -98,6 +125,7 @@ CORS_ALLOW_HEADERS = [
     "x-csrftoken",
     "x-requested-with",
 ]
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -115,17 +143,51 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "server.wsgi.application"
 
-
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": getenv("DB_NAME", "certify"),
+        "USER": getenv("DB_USER", "postgres"),
+        "PASSWORD": getenv("DB_PASSWORD", "12345678"),
+        "HOST": getenv("DB_HOST", "localhost"),
+        "PORT": getenv("DB_PORT", "5432"),
     }
 }
 
+REST_USE_JWT = True
+
+REST_AUTH = {
+    "USE_JWT": True,
+    "JWT_AUTH_COOKIE": "access-token",
+    "JWT_AUTH_REFRESH_COOKIE": "refresh-token",
+    "JWT_AUTH_HTTPONLY": True,
+    "JWT_AUTH_SAMESITE": "None",
+    "JWT_AUTH_SECURE": True,
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,  # Important for your refresh logic
+    "BLACKLIST_AFTER_ROTATION": True,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "AUTH_PARAMS": {
+            "access_type": "offline",
+        },
+        "APP": {
+            "client_id": getenv("GOOGLE_CLIENT_ID"),
+            "secret": getenv("GOOGLE_CLIENT_SECRET"),
+            "key": "",
+        },
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -150,13 +212,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 LANGUAGE_CODE = "en-us"
-
 TIME_ZONE = "UTC"
-
 USE_I18N = True
-
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -167,3 +225,8 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+SESSION_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SAMESITE = "None"
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
