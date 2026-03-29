@@ -134,7 +134,6 @@ def generate(request):
         image = Image.open(BytesIO(response.content)).convert("RGBA")
     else:
         template_file = request.FILES.get("template")
-        print(template_file)
         if not template_file:
             return Response({"error": "Template is required"}, status=400)
 
