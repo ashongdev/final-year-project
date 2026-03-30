@@ -10,3 +10,5 @@ django-allauth
 dj-rest-auth
 psycopg[binary]
 PyJWT
+cryptography
+djangorestframework-simplejwt
