@@ -6,3 +6,5 @@ requests
 python-dotenv
 Pillow
 gunicorn
+django-allauth
+dj-rest-auth
