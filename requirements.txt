@@ -8,3 +8,4 @@ Pillow
 gunicorn
 django-allauth
 dj-rest-auth
+psycopg[binary]
