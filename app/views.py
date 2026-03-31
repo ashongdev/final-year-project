@@ -1,4 +1,3 @@
-import json
 import os
 from io import BytesIO
 
@@ -10,13 +9,14 @@ import requests
 from django.http import HttpResponse
 from django.utils import timezone
 from dotenv import load_dotenv
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
 from rest_framework.permissions import IsAuthenticated
+from .util import process_image, parse_json_field
 
 load_dotenv()
 
@@ -45,6 +45,7 @@ def wake(request):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def upload(request):
     file = request.FILES.get("template")
     public_id = request.data.get("public_id")
@@ -66,6 +67,7 @@ def upload(request):
     )
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def check_public_id(request):
     public_id = request.data.get("public_id")
 
@@ -81,17 +83,8 @@ def check_public_id(request):
         # Asset does NOT exist
         return Response({"exists": False}, status=200)
 
-
-def parse_json_field(value, default=None):
-    if value is None:
-        return default
-    if isinstance(value, (dict, list)):
-        return value
-    return json.loads(value)
-
-
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])
 def generate(request):
     data = request.data
     public_id = data.get("certificateId")
@@ -156,43 +149,3 @@ def generate(request):
         headers={"Content-Disposition": f'attachment; filename="{filename}.png"'},
     )
 
-
-def process_image(image, fields):
-    draw = ImageDraw.Draw(image)
-
-    for field in fields:
-        text = field.get("text", "")
-        font_name = field.get("font", "Bickham Script Pro Regular")
-        font_size = int(field.get("fontSize", 100))
-        color = field.get("color", "#000000")
-        x_axis = int(field.get("x", 0))
-        y_axis = int(field.get("y", 0))
-        anchor_mode = field.get("anchorMode", "center")
-
-        font_path = f"fonts/{font_name}.ttf"
-        try:
-            font = ImageFont.truetype(font_path, font_size)
-        except Exception:
-            pass
-
-        # Calculate the literal bounding box of the text pixels
-        bbox = draw.textbbox((0, 0), text, font=font)  # type: ignore
-        text_left, text_top, text_right, text_bottom = bbox
-        text_w = text_right - text_left
-        text_h = text_bottom - text_top
-
-        # Shared Vertical Logic: The Y-axis is the absolute center of the text
-        y_draw = y_axis - text_h / 2 - text_top
-
-        # Horizontal Logic
-        if anchor_mode == "center":
-            x_draw = x_axis - text_w / 2 - text_left
-        else:
-            x_draw = x_axis - text_left
-
-        draw.text((x_draw, y_draw), text, font=font, fill=color)  # type: ignore
-
-    buffer = BytesIO()
-    image.save(buffer, format="PNG")
-    buffer.seek(0)
-    return buffer
