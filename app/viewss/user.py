@@ -9,7 +9,9 @@ from ..serializer import TemplateSerializer
 def fetchMyTemplates(request):
     user = request.user
 
-    templates = Templates.objects.filter(user=user, trashed=False)
+    state = request.query_params.get("state", "active")
+
+    templates = Templates.objects.filter(user=user, state=state)
     serializer = TemplateSerializer(templates, many=True)
     return Response({"templates": serializer.data})
 
@@ -41,6 +43,7 @@ def deleteTemplate(request):
     try:
         template = Templates.objects.get(user=user, id=template_id)
         template.trashed = True
+        template.state = "deleted"
         template.save()
     except Templates.DoesNotExist:
         pass

@@ -17,4 +17,5 @@ urlpatterns = [
     path("my-templates/", fetchMyTemplates),
     path("update-template/", updateTemplate),
     path("delete-template/", deleteTemplate),
+    # path("my-deleted-template/", fetchMyDeletedTemplates),
 ]

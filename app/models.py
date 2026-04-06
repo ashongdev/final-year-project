@@ -28,5 +28,6 @@ class Templates(models.Model):
     url = models.CharField(max_length=255)
     collection_id = models.UUIDField(blank=True, null=True)
     trashed = models.BooleanField(default=False)
+    state = models.TextField(default="active")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
