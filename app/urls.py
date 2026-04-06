@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views import check_public_id, generate, upload, wake, GoogleLogin
-from .viewss.user import fetchMyTemplates, updateTemplate, deleteTemplate
+from .viewss.user import fetchMyTemplates, updateTemplate, changeTemplateState
 
 urlpatterns = [
     path("wake/", wake, name="wake"),
@@ -16,6 +16,5 @@ urlpatterns = [
     # user
     path("my-templates/", fetchMyTemplates),
     path("update-template/", updateTemplate),
-    path("delete-template/", deleteTemplate),
-    # path("my-deleted-template/", fetchMyDeletedTemplates),
+    path("delete-template/", changeTemplateState), # delete and restore
 ]

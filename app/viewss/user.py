@@ -33,17 +33,19 @@ def updateTemplate(request):
 
     return Response({"ok": True})
 
+
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
-def deleteTemplate(request):
+def changeTemplateState(request):
     user = request.user
 
     template_id = request.data.get("templateId")
+    state = request.query_params.get("state", "delete")
 
     try:
         template = Templates.objects.get(user=user, id=template_id)
-        template.trashed = True
-        template.state = "deleted"
+        template.trashed = True if state == "delete" else False
+        template.state = "deleted" if state == "delete" else "active"
         template.save()
     except Templates.DoesNotExist:
         pass
