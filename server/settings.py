@@ -97,6 +97,7 @@ ROOT_URLCONF = "server.urls"
 
 CORS_ALLOW_METHODS = [
     "GET",
+    "PUT",
     "POST",
     "OPTIONS",
 ]

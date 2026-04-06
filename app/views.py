@@ -17,6 +17,7 @@ from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
 from rest_framework.permissions import IsAuthenticated
 from .util import process_image, parse_json_field
+from .models import Templates
 
 load_dotenv()
 
@@ -47,24 +48,33 @@ def wake(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def upload(request):
-    file = request.FILES.get("template")
-    public_id = request.data.get("public_id")
+    user = request.user
 
-    # Save image to in-memory buffer
-    buffer = BytesIO()
+    if user.is_authenticated:
+        file = request.FILES.get("template")
+        public_id = request.data.get("public_id")
 
-    cert_template = Image.open(file)
-    img = cert_template.copy()
+        # Save image to in-memory buffer
+        buffer = BytesIO()
 
-    img.save(buffer, format="PNG")
-    buffer.seek(0)
+        cert_template = Image.open(file)
+        img = cert_template.copy()
 
-    # Upload directly from memory
-    result = cloudinary.uploader.upload(buffer, public_id=public_id)
+        img.save(buffer, format="PNG")
+        buffer.seek(0)
 
-    return Response(
-        {"public_id": result["public_id"], "secure_url": result["secure_url"]}
-    )
+        # Upload directly from memory
+        result = cloudinary.uploader.upload(buffer, public_id=public_id)
+
+        public_id = result["public_id"]
+        url = result["secure_url"]
+
+        # save to db
+        Templates.objects.create(public_id=public_id, user=user, url=result["secure_url"])
+
+        return Response(
+            {"public_id": public_id, "secure_url": url}
+        )
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -84,7 +94,7 @@ def check_public_id(request):
         return Response({"exists": False}, status=200)
 
 @api_view(["POST"])
-# @permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated])
 def generate(request):
     data = request.data
     public_id = data.get("certificateId")

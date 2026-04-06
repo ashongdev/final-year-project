@@ -1,4 +1,6 @@
-# from django.db import models
+from django.db import models
+from django.conf import settings
+
 
 
 # class CertificatePreset(models.Model):
@@ -15,3 +17,14 @@
 
 #     def __str__(self):
 #         return self.public_id
+
+
+
+
+class Templates(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    public_id = models.CharField(max_length=255, unique=True)
+    name = models.TextField(default="")
+    url = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
