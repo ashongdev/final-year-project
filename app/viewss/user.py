@@ -9,7 +9,7 @@ from ..serializer import TemplateSerializer
 def fetchMyTemplates(request):
     user = request.user
 
-    templates = Templates.objects.filter(user=user)
+    templates = Templates.objects.filter(user=user, trashed=False)
     serializer = TemplateSerializer(templates, many=True)
     return Response({"templates": serializer.data})
 
@@ -25,6 +25,22 @@ def updateTemplate(request):
     try:
         template = Templates.objects.get(user=user, id=template_id)
         template.name = name
+        template.save()
+    except Templates.DoesNotExist:
+        pass
+
+    return Response({"ok": True})
+
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def deleteTemplate(request):
+    user = request.user
+
+    template_id = request.data.get("templateId")
+
+    try:
+        template = Templates.objects.get(user=user, id=template_id)
+        template.trashed = True
         template.save()
     except Templates.DoesNotExist:
         pass
