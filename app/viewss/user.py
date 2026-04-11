@@ -1,8 +1,8 @@
-from ..models import Templates
+from ..models import Collections, Templates
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from ..serializer import TemplateSerializer
+from ..serializer import CollectionSerializer, TemplateSerializer
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -12,8 +12,29 @@ def fetchMyTemplates(request):
     state = request.query_params.get("state", "active")
 
     templates = Templates.objects.filter(user=user, state=state)
-    serializer = TemplateSerializer(templates, many=True)
-    return Response({"templates": serializer.data})
+
+    collections = []
+    if state == "active":
+        collections = Collections.objects.filter(user=user, state=state)
+
+    templateSerializer = TemplateSerializer(templates, many=True)
+    collectionSerializer = CollectionSerializer(collections, many=True)
+    return Response({"templates": templateSerializer.data, "collections": collectionSerializer.data})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def fetchMyCollections(request):
+    user = request.user
+
+    state = request.query_params.get("state", "active")
+
+    collections = Collections.objects.filter(user=user, state=state)
+
+    if state == "active":
+        collections = Collections.objects.filter(user=user, state=state)
+    serializer = CollectionSerializer(collections, many=True)
+    return Response({"collections": serializer.data})
 
 
 @api_view(["PUT"])
@@ -51,3 +72,21 @@ def changeTemplateState(request):
         pass
     
     return Response({"ok": True})
+
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def addToCollection(request):
+    user = request.user
+
+
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def createNewCollection(request):
+    user = request.user
+    name = request.data.get("name")
+
+    Collections.objects.create(user=user, name=name)
+
+    return Response({"ok": True})
+
+

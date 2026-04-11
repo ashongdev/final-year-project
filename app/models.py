@@ -31,3 +31,11 @@ class Templates(models.Model):
     state = models.TextField(default="active")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+class Collections(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    name = models.TextField(default="")
+    trashed = models.BooleanField(default=False)
+    state = models.TextField(default="active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
