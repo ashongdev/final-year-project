@@ -22,35 +22,34 @@ def fetchMyTemplates(request):
     return Response({"templates": templateSerializer.data, "collections": collectionSerializer.data})
 
 
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def fetchMyCollections(request):
-    user = request.user
-
-    state = request.query_params.get("state", "active")
-
-    collections = Collections.objects.filter(user=user, state=state)
-
-    if state == "active":
-        collections = Collections.objects.filter(user=user, state=state)
-    serializer = CollectionSerializer(collections, many=True)
-    return Response({"collections": serializer.data})
-
 
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def updateTemplate(request):
     user = request.user
+    is_template = request.data.get("isTemplate")
 
-    name = request.data.get("name")
+    name = request.data.get("name", "New Collection")
     template_id = request.data.get("templateId")
+    collection_id = request.data.get("collectionId")
 
-    try:
-        template = Templates.objects.get(user=user, id=template_id)
-        template.name = name
-        template.save()
-    except Templates.DoesNotExist:
-        pass
+
+
+    if not is_template:
+        try:
+            template = Templates.objects.get(user=user, id=template_id)
+            template.name = name
+            template.save()
+        except Templates.DoesNotExist:
+            pass
+    else:
+            
+        try:
+            collection = Collections.objects.get(user=user, id=collection_id)
+            collection.name = name
+            collection.save()
+        except Templates.DoesNotExist:
+            pass
 
     return Response({"ok": True})
 
@@ -86,7 +85,10 @@ def createNewCollection(request):
     name = request.data.get("name")
 
     Collections.objects.create(user=user, name=name)
+    collections = Collections.objects.filter(user=user, state="active")
 
-    return Response({"ok": True})
+    collectionSerializer = CollectionSerializer(collections, many=True)
+
+    return Response({"collections": collectionSerializer.data})
 
 
