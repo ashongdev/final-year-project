@@ -7,7 +7,6 @@ import cloudinary.exceptions
 import cloudinary.uploader
 import requests
 from django.http import HttpResponse
-from django.utils import timezone
 from dotenv import load_dotenv
 from PIL import Image
 from rest_framework.decorators import api_view, permission_classes
@@ -99,7 +98,6 @@ def check_public_id(request):
         return Response({"exists": False}, status=200)
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
 def generate(request):
     data = request.data
     public_id = data.get("certificateId")
