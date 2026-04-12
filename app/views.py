@@ -35,7 +35,7 @@ cloudinary.config(
 
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
-    callback_url = 'http://localhost:8080/auth/google/callback'
+    callback_url = os.getenv("GOOGLE_CALLBACK_URL")
     client_class = OAuth2Client
 
 
