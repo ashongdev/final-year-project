@@ -1,10 +1,10 @@
 from django.urls import path
 
-from .views import check_public_id, generate, upload, wake, GoogleLogin
+from .views import check_public_id, generate, upload, me, GoogleLogin
 from .viewss.user import addToCollection, createNewCollection, fetchMyTemplates, updateTemplate, changeTemplateState
 
 urlpatterns = [
-    path("wake/", wake, name="wake"),
+    path("me/", me, name="me"),
     path("upload/", upload, name="upload"),
     path("generate/", generate, name="generate"),
     path("check_public_id/", check_public_id, name="check_public_id"),

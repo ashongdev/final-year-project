@@ -41,9 +41,11 @@ class GoogleLogin(SocialLoginView):
 
 
 @api_view(["GET"])
-def wake(request):
-    return Response({"status": "success", "time": timezone.now()})
-
+@permission_classes([IsAuthenticated])
+def me(request):
+    return Response({
+        "username": request.user.username
+    })
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
