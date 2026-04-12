@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import check_public_id, generate, upload, me, GoogleLogin
 from .viewss.user import addToCollection, createNewCollection, fetchMyTemplates, updateTemplate, changeTemplateState
+from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
     path("me/", me, name="me"),
@@ -11,6 +12,9 @@ urlpatterns = [
     path('auth/google/', GoogleLogin.as_view(), name='google_login'),
     path('auto-upload/', upload, name='auto_upload'),
     # path("get_preset/<str:public_id>/", get_preset, name="get_preset"),
+    
+    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+
 
 
     # user

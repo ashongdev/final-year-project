@@ -70,10 +70,9 @@ INSTALLED_APPS = [
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "dj_rest_auth.jwt_auth.JWTCookieAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
     ),
 }
-
+CSRF_COOKIE_HTTPONLY = False
 SITE_ID = 1
 
 AUTHENTICATION_BACKENDS = [
