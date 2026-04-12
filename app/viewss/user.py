@@ -76,6 +76,14 @@ def changeTemplateState(request):
 @permission_classes([IsAuthenticated])
 def addToCollection(request):
     user = request.user
+    collection_id = request.data.get("collectionId")
+    template_id = request.data.get("templateId")
+
+    temp = Templates.objects.get(user=user, id=template_id)
+    temp.collection_id = collection_id
+    temp.save()
+
+    return Response({"ok": True})
 
 
 @api_view(["PUT"])

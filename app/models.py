@@ -26,7 +26,7 @@ class Templates(models.Model):
     public_id = models.CharField(max_length=255, unique=True)
     name = models.TextField(default="")
     url = models.CharField(max_length=255)
-    collection_id = models.UUIDField(blank=True, null=True)
+    collection_id = models.IntegerField(blank=True, null=True)
     trashed = models.BooleanField(default=False)
     state = models.TextField(default="active")
     created_at = models.DateTimeField(auto_now_add=True)

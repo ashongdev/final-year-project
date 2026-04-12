@@ -54,6 +54,9 @@ def upload(request):
         file = request.FILES.get("template")
         public_id = request.data.get("public_id")
 
+        if not file:
+            return Response({"error": "No file provided"}, status=400)
+
         # Save image to in-memory buffer
         buffer = BytesIO()
 

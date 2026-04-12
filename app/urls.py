@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views import check_public_id, generate, upload, wake, GoogleLogin
-from .viewss.user import createNewCollection, fetchMyTemplates, updateTemplate, changeTemplateState
+from .viewss.user import addToCollection, createNewCollection, fetchMyTemplates, updateTemplate, changeTemplateState
 
 urlpatterns = [
     path("wake/", wake, name="wake"),
@@ -21,5 +21,6 @@ urlpatterns = [
 
     # collections
     path("create-collection/", createNewCollection), # delete and restore
+    path("add-to-collection/", addToCollection),
 
 ]
