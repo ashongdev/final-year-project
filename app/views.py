@@ -32,12 +32,6 @@ cloudinary.config(
     secure=True,
 )
 
-
-class GoogleLogin(SocialLoginView):
-    adapter_class = GoogleOAuth2Adapter
-    client_class = OAuth2Client
-
-
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def me(request):
