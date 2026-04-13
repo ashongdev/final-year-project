@@ -14,6 +14,7 @@ from pathlib import Path
 from os import getenv
 from dotenv import load_dotenv
 from datetime import timedelta
+from urllib.parse import urlparse, parse_qsl
 
 load_dotenv()
 
@@ -145,17 +146,22 @@ WSGI_APPLICATION = "server.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+tmpPostgres = urlparse(getenv("DATABASE_URL"))
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": getenv("DB_NAME", "certify"),
-        "USER": getenv("DB_USER", "postgres"),
-        "PASSWORD": getenv("DB_PASSWORD", "12345678"),
-        "HOST": getenv("DB_HOST", "localhost"),
-        "PORT": getenv("DB_PORT", "5432"),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': tmpPostgres.path.replace('/', ''), # type: ignore
+        'USER': tmpPostgres.username,
+        'PASSWORD': tmpPostgres.password,
+        'HOST': tmpPostgres.hostname,
+        'PORT': 5432,
+        'OPTIONS': dict(parse_qsl(tmpPostgres.query)), # type: ignore
     }
 }
+
+
+# postgresql://neondb_owner:npg_biy0txHnQEu8@ep-rapid-darkness-an86w26a-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
 
 REST_USE_JWT = True
 
