@@ -160,9 +160,6 @@ DATABASES = {
     }
 }
 
-
-# postgresql://neondb_owner:npg_biy0txHnQEu8@ep-rapid-darkness-an86w26a-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-
 REST_USE_JWT = True
 
 REST_AUTH = {
