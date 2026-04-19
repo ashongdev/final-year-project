@@ -6,17 +6,18 @@ import cloudinary.api
 import cloudinary.exceptions
 import cloudinary.uploader
 import requests
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from dj_rest_auth.registration.views import SocialLoginView
 from django.http import HttpResponse
 from dotenv import load_dotenv
 from PIL import Image
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
-from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
-from allauth.socialaccount.providers.oauth2.client import OAuth2Client
-from dj_rest_auth.registration.views import SocialLoginView
 from rest_framework.permissions import IsAuthenticated
-from .util import process_image, parse_json_field
+from rest_framework.response import Response
+
 from .models import Templates
+from .util import parse_json_field, process_image
 
 load_dotenv()
 
@@ -32,12 +33,18 @@ cloudinary.config(
     secure=True,
 )
 
+
+class GoogleLogin(SocialLoginView):
+    adapter_class = GoogleOAuth2Adapter
+    callback_url = os.getenv("CALLBACK_URL")
+    client_class = OAuth2Client
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def me(request):
-    return Response({
-        "username": request.user.username
-    })
+    return Response({"username": request.user.username})
+
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -67,11 +74,12 @@ def upload(request):
         url = result["secure_url"]
 
         # save to db
-        Templates.objects.create(public_id=public_id, user=user, url=result["secure_url"])
-
-        return Response(
-            {"public_id": public_id, "secure_url": url}
+        Templates.objects.create(
+            public_id=public_id, user=user, url=result["secure_url"]
         )
+
+        return Response({"public_id": public_id, "secure_url": url})
+
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -89,6 +97,7 @@ def check_public_id(request):
     except cloudinary.exceptions.NotFound:
         # Asset does NOT exist
         return Response({"exists": False}, status=200)
+
 
 @api_view(["POST"])
 def generate(request):
@@ -154,4 +163,3 @@ def generate(request):
         content_type="image/png",
         headers={"Content-Disposition": f'attachment; filename="{filename}.png"'},
     )
-

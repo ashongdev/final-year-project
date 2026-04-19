@@ -1,8 +1,10 @@
-from ..models import Collections, Templates
-from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from ..models import Collections, Templates
 from ..serializer import CollectionSerializer, TemplateSerializer
+
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -19,8 +21,9 @@ def fetchMyTemplates(request):
 
     templateSerializer = TemplateSerializer(templates, many=True)
     collectionSerializer = CollectionSerializer(collections, many=True)
-    return Response({"templates": templateSerializer.data, "collections": collectionSerializer.data})
-
+    return Response(
+        {"templates": templateSerializer.data, "collections": collectionSerializer.data}
+    )
 
 
 @api_view(["PUT"])
@@ -33,8 +36,6 @@ def updateTemplate(request):
     template_id = request.data.get("templateId")
     collection_id = request.data.get("collectionId")
 
-
-
     if not is_template:
         try:
             template = Templates.objects.get(user=user, id=template_id)
@@ -43,7 +44,6 @@ def updateTemplate(request):
         except Templates.DoesNotExist:
             pass
     else:
-            
         try:
             collection = Collections.objects.get(user=user, id=collection_id)
             collection.name = name
@@ -69,8 +69,9 @@ def changeTemplateState(request):
         template.save()
     except Templates.DoesNotExist:
         pass
-    
+
     return Response({"ok": True})
+
 
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
@@ -98,5 +99,3 @@ def createNewCollection(request):
     collectionSerializer = CollectionSerializer(collections, many=True)
 
     return Response({"collections": collectionSerializer.data})
-
-
