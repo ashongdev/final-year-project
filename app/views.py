@@ -16,7 +16,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import Templates
+from .models import TemplateParams, Templates
 from .util import parse_json_field, process_image
 
 load_dotenv()
@@ -51,22 +51,22 @@ def me(request):
 def upload(request):
     user = request.user
 
+    file = request.FILES.get("template")
+    public_id = request.data.get("public_id")
+
+    if not file:
+        return Response({"error": "No file provided"}, status=400)
+
+    # Save image to in-memory buffer
+    buffer = BytesIO()
+
+    cert_template = Image.open(file)
+    img = cert_template.copy()
+
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+
     if user.is_authenticated:
-        file = request.FILES.get("template")
-        public_id = request.data.get("public_id")
-
-        if not file:
-            return Response({"error": "No file provided"}, status=400)
-
-        # Save image to in-memory buffer
-        buffer = BytesIO()
-
-        cert_template = Image.open(file)
-        img = cert_template.copy()
-
-        img.save(buffer, format="PNG")
-        buffer.seek(0)
-
         # Upload directly from memory
         result = cloudinary.uploader.upload(buffer, public_id=public_id)
 
@@ -74,11 +74,14 @@ def upload(request):
         url = result["secure_url"]
 
         # save to db
-        Templates.objects.create(
+        template = Templates.objects.create(
             public_id=public_id, user=user, url=result["secure_url"]
         )
 
+        TemplateParams.objects.create(template=template, user=user)
+
         return Response({"public_id": public_id, "secure_url": url})
+    return Response({"public_id": "", "secure_url": ""})
 
 
 @api_view(["POST"])

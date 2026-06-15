@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from ..models import Collections, Templates
+from ..pagination import MAX_PAGE_SIZE, get_pagination_params, paginate_queryset
 from ..serializer import CollectionSerializer, TemplateSerializer
 
 
@@ -10,19 +11,59 @@ from ..serializer import CollectionSerializer, TemplateSerializer
 @permission_classes([IsAuthenticated])
 def fetchMyTemplates(request):
     user = request.user
-
     state = request.query_params.get("state", "active")
+    collection_id = request.query_params.get("collection_id")
+    page, page_size = get_pagination_params(request)
 
-    templates = Templates.objects.filter(user=user, state=state)
+    templates_qs = Templates.objects.filter(user=user, state=state).order_by(
+        "-updated_at"
+    )
 
-    collections = []
-    if state == "active":
-        collections = Collections.objects.filter(user=user, state=state)
+    if collection_id is not None:
+        try:
+            templates_qs = templates_qs.filter(collection_id=int(collection_id))
+        except (TypeError, ValueError):
+            return Response({"error": "Invalid collection_id"}, status=400)
 
-    templateSerializer = TemplateSerializer(templates, many=True)
-    collectionSerializer = CollectionSerializer(collections, many=True)
+    paginated_templates, pagination = paginate_queryset(
+        templates_qs, page, page_size
+    )
+
+    template_serializer = TemplateSerializer(paginated_templates, many=True)
     return Response(
-        {"templates": templateSerializer.data, "collections": collectionSerializer.data}
+        {
+            "templates": template_serializer.data,
+            "pagination": pagination,
+        }
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def fetchMyCollections(request):
+    user = request.user
+    page, page_size = get_pagination_params(request)
+    list_all = request.query_params.get("all", "").lower() == "true"
+
+    collections_qs = Collections.objects.filter(user=user, state="active").order_by(
+        "-updated_at"
+    )
+
+    if list_all:
+        total = collections_qs.count()
+        page = 1
+        page_size = min(total if total > 0 else 1, MAX_PAGE_SIZE)
+
+    paginated_collections, pagination = paginate_queryset(
+        collections_qs, page, page_size
+    )
+
+    collection_serializer = CollectionSerializer(paginated_collections, many=True)
+    return Response(
+        {
+            "collections": collection_serializer.data,
+            "pagination": pagination,
+        }
     )
 
 
@@ -93,9 +134,7 @@ def createNewCollection(request):
     user = request.user
     name = request.data.get("name")
 
-    Collections.objects.create(user=user, name=name)
-    collections = Collections.objects.filter(user=user, state="active")
+    collection = Collections.objects.create(user=user, name=name)
+    collection_serializer = CollectionSerializer(collection)
 
-    collectionSerializer = CollectionSerializer(collections, many=True)
-
-    return Response({"collections": collectionSerializer.data})
+    return Response({"collection": collection_serializer.data})

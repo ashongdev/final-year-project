@@ -6,6 +6,7 @@ from .viewss.user import (
     addToCollection,
     changeTemplateState,
     createNewCollection,
+    fetchMyCollections,
     fetchMyTemplates,
     updateTemplate,
 )
@@ -22,6 +23,7 @@ urlpatterns = [
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="refresh_token"),
     # user
     path("my-templates/", fetchMyTemplates),
+    path("my-collections/", fetchMyCollections),
     path("update-template/", updateTemplate),
     path("delete-template/", changeTemplateState),  # delete and restore
     path("delete-template/", changeTemplateState),  # delete and restore

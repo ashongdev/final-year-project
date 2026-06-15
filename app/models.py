@@ -1,7 +1,5 @@
-from django.db import models
 from django.conf import settings
-
-
+from django.db import models
 
 # class CertificatePreset(models.Model):
 #     public_id = models.CharField(max_length=255, unique=True)
@@ -19,8 +17,6 @@ from django.conf import settings
 #         return self.public_id
 
 
-
-
 class Templates(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     public_id = models.CharField(max_length=255, unique=True)
@@ -32,6 +28,7 @@ class Templates(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+
 class Collections(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     name = models.TextField(default="")
@@ -39,3 +36,24 @@ class Collections(models.Model):
     state = models.TextField(default="active")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class TemplateParams(models.Model):
+    class AnchorMode(models.TextChoices):
+        CENTER = "center"
+        LEFT = "left"
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    template = models.ForeignKey(Templates, on_delete=models.CASCADE)
+    label = models.TextField(default="Participant Name")
+    text = models.TextField(default="John Doe")
+    x = models.IntegerField(default=0)
+    y = models.IntegerField(default=0)
+    font = models.TextField(default="Bickham Script Pro Regular")
+    font_size = models.IntegerField(default=100)
+    font_weight = models.IntegerField(default=0)
+    color = models.TextField(default="#000000")
+    anchor_mode = models.TextField(
+        choices=AnchorMode.choices, default=AnchorMode.CENTER
+    )
+    required = models.BooleanField(default=True)
