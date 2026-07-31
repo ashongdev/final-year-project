@@ -13,6 +13,11 @@ from .views.dashboard import (
     rename_template,
     set_template_state,
 )
+from .views.participant import (
+    request_verification_code,
+    save_recipients,
+    verify_recipient_code,
+)
 
 
 def health(request):
@@ -33,6 +38,18 @@ urlpatterns = [
     path("generate/", generate, name="generate"),
     path("generate-batch/", generate_batch, name="generate_batch"),
     path("check-public-id/", check_public_id, name="check_public_id"),
+    # Recipient verification (gated participant links)
+    path("templates/recipients/", save_recipients, name="save_recipients"),
+    path(
+        "participant/request-code/",
+        request_verification_code,
+        name="request_verification_code",
+    ),
+    path(
+        "participant/verify-code/",
+        verify_recipient_code,
+        name="verify_recipient_code",
+    ),
     # Templates
     path("templates/", list_templates, name="list_templates"),
     path("templates/rename/", rename_template, name="rename_template"),

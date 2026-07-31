@@ -200,10 +200,20 @@ REST_FRAMEWORK = {
         "anon": getenv("THROTTLE_RATE_ANON", "60/hour"),
         "user": getenv("THROTTLE_RATE_USER", "300/hour"),
         "generate": getenv("THROTTLE_RATE_GENERATE", "30/hour"),
+        "verification": getenv("THROTTLE_RATE_VERIFICATION", "10/hour"),
     },
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "EXCEPTION_HANDLER": "app.exceptions.custom_exception_handler",
 }
+
+# ─── Email ──────────────────────────────────────────────────────────────────
+# Recipient verification codes (see app.models.RecipientVerification) are
+# sent via the Resend API (app.views.participant). RESEND_API_KEY must be
+# set for sends to actually go out — with no key, verification requests
+# will fail at send time rather than silently no-op.
+
+RESEND_API_KEY = getenv("RESEND_API_KEY", "")
+DEFAULT_FROM_EMAIL = getenv("DEFAULT_FROM_EMAIL", "no-reply@genc.app")
 
 # ─── Security Headers ─────────────────────────────────────────────────────────
 

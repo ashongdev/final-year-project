@@ -10,6 +10,8 @@ import requests
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
+from django.core import signing
+from django.db import models
 from django.http import HttpResponse
 from dotenv import load_dotenv
 from PIL import Image
@@ -17,9 +19,14 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
-from ..models import TemplateParams, Templates
+from ..models import PublishedRecipient, TemplateParams, Templates
 from ..throttles import GenerateThrottle
 from ..util import parse_json_field, process_image
+
+# Must match app.views.participant.VERIFICATION_SALT / TOKEN_MAX_AGE_SECONDS —
+# duplicated here (rather than imported) to avoid a views-package import cycle.
+VERIFICATION_SALT = "recipient-verification"
+TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24  # 24h
 
 load_dotenv()
 
@@ -99,10 +106,62 @@ def upload(request):
     image.save(buffer, format="PNG")
     buffer.seek(0)
 
-    public_id = request.data.get("public_id") or None
+    requested_public_id = (request.data.get("public_id") or "").strip() or None
+    existing_public_id = (request.data.get("existing_public_id") or "").strip() or None
+
+    existing_template = None
+    if existing_public_id:
+        existing_template = Templates.objects.filter(
+            public_id=existing_public_id, user=user
+        ).first()
+
+    if existing_template:
+        # Re-publishing/re-uploading within the same session — overwrite the
+        # asset already owned by this user in place instead of creating a
+        # duplicate Cloudinary asset + Templates row.
+        try:
+            result = cloudinary.uploader.upload(
+                buffer,
+                public_id=existing_template.public_id,
+                overwrite=True,
+                invalidate=True,
+            )
+        except Exception as exc:
+            logger.error("Cloudinary overwrite failed for user %s: %s", user.pk, exc)
+            return Response({"error": "Upload to storage failed."}, status=502)
+
+        final_public_id = result["public_id"]
+        url = result["secure_url"]
+
+        # A different final id was requested (e.g. a custom slug set at
+        # publish time) — rename the same asset rather than duplicating it.
+        if requested_public_id and requested_public_id != final_public_id:
+            try:
+                rename_result = cloudinary.uploader.rename(
+                    final_public_id, requested_public_id, overwrite=True
+                )
+                final_public_id = rename_result["public_id"]
+                url = rename_result["secure_url"]
+            except cloudinary.exceptions.Error as exc:
+                logger.warning(
+                    "Rename failed for %s -> %s: %s",
+                    final_public_id,
+                    requested_public_id,
+                    exc,
+                )
+                # Non-fatal: keep serving the asset under its current id.
+
+        existing_template.public_id = final_public_id
+        existing_template.url = url
+        existing_template.save(update_fields=["public_id", "url", "updated_at"])
+
+        logger.info(
+            "Template replaced in place: %s by user %s", final_public_id, user.pk
+        )
+        return Response({"public_id": final_public_id, "secure_url": url})
 
     try:
-        result = cloudinary.uploader.upload(buffer, public_id=public_id)
+        result = cloudinary.uploader.upload(buffer, public_id=requested_public_id)
     except Exception as exc:
         logger.error("Cloudinary upload failed for user %s: %s", user.pk, exc)
         return Response({"error": "Upload to storage failed."}, status=502)
@@ -141,6 +200,63 @@ def check_public_id(request):
 
 
 # ─── Certificate generation ───────────────────────────────────────────────────
+
+def _check_recipient_gate(public_id: str, verification_token: str) -> Response | None:
+    """
+    Returns a 403 Response if this template is gated (has a recipients
+    allow-list) and the caller doesn't present a valid verification token
+    for one of those recipients. Returns None if generation may proceed —
+    either the template is ungated (no recipients set), or the token checks
+    out.
+    """
+    template = Templates.objects.filter(public_id=public_id).first()
+    if not template or not PublishedRecipient.objects.filter(template=template).exists():
+        return None  # Ungated — open to anyone, as before.
+
+    if not verification_token:
+        return Response(
+            {
+                "error": "This certificate requires email verification.",
+                "gated": True,
+            },
+            status=403,
+        )
+
+    try:
+        payload = signing.loads(
+            verification_token,
+            salt=VERIFICATION_SALT,
+            max_age=TOKEN_MAX_AGE_SECONDS,
+        )
+    except signing.BadSignature:
+        return Response(
+            {
+                "error": "Verification expired or invalid. Please verify again.",
+                "gated": True,
+            },
+            status=403,
+        )
+
+    if payload.get("public_id") != public_id:
+        return Response(
+            {"error": "Verification does not match this certificate.", "gated": True},
+            status=403,
+        )
+
+    recipient = PublishedRecipient.objects.filter(
+        template=template, email__iexact=payload.get("email", "")
+    ).first()
+    if not recipient:
+        return Response(
+            {"error": "You are no longer on the recipient list.", "gated": True},
+            status=403,
+        )
+
+    PublishedRecipient.objects.filter(pk=recipient.pk).update(
+        download_count=models.F("download_count") + 1
+    )
+    return None
+
 
 @api_view(["POST"])
 @throttle_classes([GenerateThrottle])
@@ -190,6 +306,10 @@ def generate(request):
             return Response({"error": "certificateId is required."}, status=400)
         if len(public_id) > 255:
             return Response({"error": "certificateId is too long."}, status=400)
+
+        err = _check_recipient_gate(public_id, data.get("verificationToken", ""))
+        if err:
+            return err
 
         url = f"https://res.cloudinary.com/{CLOUDINARY_CLOUD_NAME}/image/upload/{public_id}.png"
         try:

@@ -1,5 +1,9 @@
+import secrets
+from datetime import timedelta
+
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class Templates(models.Model):
@@ -96,3 +100,72 @@ class TemplateParams(models.Model):
 
     def __str__(self):
         return f"{self.label} on template {self.template_id}"
+
+
+class PublishedRecipient(models.Model):
+    """
+    The allow-list of recipients for a published template. Once a template
+    has at least one row here, the public participant link for it requires
+    email verification against this list before a certificate can be
+    generated. Templates with no recipients stay open to anyone, as before.
+    """
+
+    template = models.ForeignKey(
+        Templates,
+        on_delete=models.CASCADE,
+        related_name="recipients",
+        db_index=True,
+    )
+    name = models.CharField(max_length=255)
+    email = models.EmailField(db_index=True)
+    # Not yet enforced as a limit anywhere — reserved for a future
+    # "N free downloads, then paid" feature. See RecipientVerification.
+    download_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["template", "email"], name="unique_recipient_per_template"
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["template", "email"], name="recipient_template_email_idx"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.email} for template {self.template_id}"
+
+
+def _generate_verification_code() -> str:
+    return f"{secrets.randbelow(1_000_000):06d}"
+
+
+def _default_expiry() -> "timezone.datetime":
+    return timezone.now() + timedelta(minutes=10)
+
+
+class RecipientVerification(models.Model):
+    """A short-lived, single-use email verification code for a recipient."""
+
+    MAX_ATTEMPTS = 5
+
+    template = models.ForeignKey(Templates, on_delete=models.CASCADE, db_index=True)
+    email = models.EmailField(db_index=True)
+    code = models.CharField(max_length=6, default=_generate_verification_code)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    consumed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(default=_default_expiry)
+
+    def is_valid(self) -> bool:
+        return (
+            not self.consumed
+            and self.attempts < self.MAX_ATTEMPTS
+            and timezone.now() < self.expires_at
+        )
+
+    def __str__(self):
+        return f"Verification for {self.email} on template {self.template_id}"
