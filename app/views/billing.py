@@ -65,7 +65,7 @@ def create_subscription_checkout(request):
             customer_email=(
                 None if subscription.stripe_customer_id else request.user.email
             ),
-            success_url=f"{settings.FRONTEND_URL}/dashboard/billing?checkout=success",
+            success_url=f"{settings.FRONTEND_URL}/dashboard/settings/billing?checkout=success",
             cancel_url=f"{settings.FRONTEND_URL}/pricing?checkout=cancelled",
         )
     except stripe.error.StripeError as exc:
@@ -92,7 +92,7 @@ def create_credit_checkout(request):
             customer_email=(
                 None if subscription.stripe_customer_id else request.user.email
             ),
-            success_url=f"{settings.FRONTEND_URL}/dashboard/billing?checkout=success",
+            success_url=f"{settings.FRONTEND_URL}/dashboard/settings/billing?checkout=success",
             cancel_url=f"{settings.FRONTEND_URL}/pricing?checkout=cancelled",
         )
     except stripe.error.StripeError as exc:
@@ -117,7 +117,7 @@ def create_billing_portal_session(request):
     try:
         portal_session = stripe.billing_portal.Session.create(
             customer=subscription.stripe_customer_id,
-            return_url=f"{settings.FRONTEND_URL}/dashboard/billing",
+            return_url=f"{settings.FRONTEND_URL}/dashboard/settings/billing",
         )
     except stripe.error.StripeError as exc:
         logger.error(
@@ -187,14 +187,17 @@ def _handle_subscription_updated(sub_obj: dict) -> None:
         subscription.tier = Subscription.Tier.FREE
 
     items = sub_obj.get("items", {}).get("data", [])
+    period_end = None
     if items:
         subscription.interval = (
             items[0].get("price", {}).get("recurring", {}).get("interval", "")
         )
+        # Moved off the subscription object onto each item in newer API
+        # versions, since a subscription can have items on different cycles.
+        period_end = items[0].get("current_period_end")
 
     subscription.stripe_subscription_id = sub_obj.get("id", "")
     subscription.cancel_at_period_end = bool(sub_obj.get("cancel_at_period_end"))
-    period_end = sub_obj.get("current_period_end")
     if period_end:
         subscription.current_period_end = timezone.datetime.fromtimestamp(
             period_end, tz=timezone.utc
