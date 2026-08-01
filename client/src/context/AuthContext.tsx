@@ -1,4 +1,4 @@
-import api from "@/services/axios";
+import api, { primeCsrfToken } from "@/services/axios";
 import { fetchBillingStatus } from "@/services/billingApi";
 import {
 	createContext,
@@ -61,12 +61,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 	}, [BASE_URL]);
 
 	useEffect(() => {
-		// The frontend only ever talks to Django's JSON API, so nothing
-		// else naturally makes Django set the csrftoken cookie — without
-		// this, a user's very first POST (e.g. Google login) has no token
-		// to send and gets rejected. Fire this once, as early as possible.
-		void api.get(`${BASE_URL}/csrf/`);
-	}, [BASE_URL]);
+		// Without this, a user's very first POST (e.g. Google login) has no
+		// CSRF token to send and gets rejected. Fire this once, as early as
+		// possible.
+		void primeCsrfToken();
+	}, []);
 
 	useEffect(() => {
 		void refreshAuth();

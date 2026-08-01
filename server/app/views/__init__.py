@@ -14,6 +14,7 @@ from django.conf import settings
 from django.core import signing
 from django.db import models
 from django.http import HttpResponse
+from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
 from dotenv import load_dotenv
 from PIL import Image
@@ -66,12 +67,16 @@ class GoogleLogin(SocialLoginView):
 @ensure_csrf_cookie
 def csrf(request):
     """
-    Forces Django to set the csrftoken cookie on the response. The frontend
-    is a pure JSON API client, so nothing else ever triggers this — without
-    an explicit call, the cookie never exists yet on a user's very first
-    unsafe (POST) request, e.g. login.
+    Forces Django to set the csrftoken cookie on the response, and hands the
+    same value back in the body. Frontend and backend live on different
+    domains in production (onrender.com vs vercel.app), so the frontend's
+    JS can never read the cookie itself — cookies are host-scoped, and
+    cross-domain reads are simply not possible, regardless of timing. The
+    response body is the only channel that actually works cross-origin, so
+    the frontend must echo this value back as the X-CSRFToken header rather
+    than trying to read it from document.cookie.
     """
-    return Response({"detail": "ok"})
+    return Response({"csrfToken": get_token(request)})
 
 
 # ─── Auth ─────────────────────────────────────────────────────────────────────
