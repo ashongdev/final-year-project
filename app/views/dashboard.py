@@ -4,6 +4,7 @@ Dashboard views: templates and collections CRUD for authenticated users.
 import logging
 from datetime import timedelta
 
+from django.conf import settings
 from django.db.models import Count, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
@@ -393,6 +394,19 @@ def create_collection(request):
         return Response(
             {"error": "A collection with this name already exists."}, status=409
         )
+    if not user_has_pro_access(user):
+        active_count = Collections.objects.filter(user=user, state="active").count()
+        if active_count >= settings.FREE_COLLECTION_CAP:
+            return Response(
+                {
+                    "error": (
+                        f"Free accounts are limited to {settings.FREE_COLLECTION_CAP} "
+                        "collections. Upgrade to Pro for unlimited collections."
+                    ),
+                    "upgrade_required": True,
+                },
+                status=402,
+            )
 
     collection = Collections.objects.create(user=user, name=name)
     serializer = CollectionSerializer(collection)

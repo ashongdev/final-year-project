@@ -233,6 +233,7 @@ FREE_TEMPLATE_CAP = 2
 FREE_REDOWNLOAD_CAP = 3
 FREE_FIELD_CAP = 1
 FREE_SELF_SERVE_CAP = 25
+FREE_COLLECTION_CAP = 2
 
 # Where Checkout/Billing Portal sessions redirect back to after payment.
 FRONTEND_URL = getenv("FRONTEND_URL", "http://localhost:8080")
