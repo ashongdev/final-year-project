@@ -61,6 +61,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 	}, [BASE_URL]);
 
 	useEffect(() => {
+		// The frontend only ever talks to Django's JSON API, so nothing
+		// else naturally makes Django set the csrftoken cookie — without
+		// this, a user's very first POST (e.g. Google login) has no token
+		// to send and gets rejected. Fire this once, as early as possible.
+		void api.get(`${BASE_URL}/csrf/`);
+	}, [BASE_URL]);
+
+	useEffect(() => {
 		void refreshAuth();
 	}, [refreshAuth]);
 

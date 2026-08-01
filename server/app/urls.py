@@ -1,7 +1,15 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from .views import GoogleLogin, check_public_id, generate, me, upload, upload_signature
+from .views import (
+    GoogleLogin,
+    check_public_id,
+    csrf,
+    generate,
+    me,
+    upload,
+    upload_signature,
+)
 from .views.batch import generate_batch
 from .views.dashboard import (
     analytics,
@@ -46,6 +54,7 @@ urlpatterns = [
     # Health
     path("health/", health, name="health"),
     # Auth
+    path("csrf/", csrf, name="csrf"),
     path("me/", me, name="me"),
     path("auth/google/", GoogleLogin.as_view(), name="google_login"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),

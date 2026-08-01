@@ -14,6 +14,7 @@ from django.conf import settings
 from django.core import signing
 from django.db import models
 from django.http import HttpResponse
+from django.views.decorators.csrf import ensure_csrf_cookie
 from dotenv import load_dotenv
 from PIL import Image
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
@@ -59,6 +60,18 @@ class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
     callback_url = os.getenv("CALLBACK_URL")
     client_class = OAuth2Client
+
+
+@api_view(["GET"])
+@ensure_csrf_cookie
+def csrf(request):
+    """
+    Forces Django to set the csrftoken cookie on the response. The frontend
+    is a pure JSON API client, so nothing else ever triggers this — without
+    an explicit call, the cookie never exists yet on a user's very first
+    unsafe (POST) request, e.g. login.
+    """
+    return Response({"detail": "ok"})
 
 
 # ─── Auth ─────────────────────────────────────────────────────────────────────
