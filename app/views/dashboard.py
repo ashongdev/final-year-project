@@ -24,10 +24,11 @@ from ..serializer import CollectionSerializer, TemplateSerializer
 
 logger = logging.getLogger("app")
 
-# Widest window the frontend's timeframe selector offers (7 / 30 / 90 days);
-# the full 90-day trend is fetched once and sliced client-side, so switching
+# Covers a full year for the GitHub-style activity heatmap, and is a
+# superset of the 7/30/90-day options the certificate-generation trend
+# offers — both are fetched once and sliced client-side, so switching
 # timeframes doesn't require a refetch.
-ANALYTICS_TREND_DAYS = 90
+ANALYTICS_TREND_DAYS = 365
 ANALYTICS_TOP_TEMPLATES = 8
 ANALYTICS_RECENT_EVENTS = 10
 
