@@ -1,0 +1,82 @@
+You are not updating or refining the existing design—you are performing a complete ground-up redesign. Do not preserve the current layout, hierarchy, navigation, spacing, positioning, components, or visual patterns. Treat the existing interface as if it does not exist. You have full creative control over every aspect of the UI/UX. Choose your own structure, navigation, content flow, composition, and interaction patterns. The final result should feel like an entirely different product, not an iteration.
+
+Avoid generic modern SaaS or template-style layouts. Do not rely on the common pattern of a large hero section followed by evenly spaced feature cards or repetitive content blocks. Instead, create a visually distinctive experience with a strong design identity.
+
+Design using an asymmetric, editorial, magazine-inspired layout with overlapping elements, varied section heights, layered compositions, bold typography, and dynamic whitespace. Let sections feel intentionally unique rather than following a rigid grid.
+
+Blend real photography with stylized illustrations, hand-drawn accents, abstract graphics, textures, maps, icons, sketches, or playful visual elements to create warmth, personality, and a memorable aesthetic. The interface should feel crafted rather than assembled from a UI kit.
+
+Present information in unexpected and creative formats instead of traditional cards or icon grids. Consider:
+
+Vertical scrolling marquees
+Collage-style layouts
+Staggered image and text compositions
+Editorial pull quotes
+Layered content blocks
+Floating annotations
+Interactive timelines
+Split compositions
+Rotated or overlapping content
+Modular storytelling sections
+
+Make primary actions impossible to miss by designing them as persistent floating or sticky interactive elements that remain accessible while scrolling, rather than static buttons placed inside conventional sections.
+
+Keep navigation minimal and elegant. Explore unconventional navigation patterns, unique transitions, progressive disclosure, or layouts that naturally guide users through the experience instead of relying on predictable website structures.
+
+The entire page should flow like a visual story, where each section transitions naturally into the next with varied pacing, composition, and visual rhythm. Every screen should introduce a fresh layout while maintaining overall cohesion.
+
+Prioritize originality over convention. Avoid layouts that resemble common templates or popular landing page builders. Every section should feel intentionally designed with its own identity while contributing to a unified visual language.
+
+Use a refined palette of warm earthy tones complemented by a single bold accent color (such as teal or coral) to create contrast and visual energy. Support this with expressive typography, thoughtful layering, subtle motion opportunities, generous whitespace, and polished micro-interactions that reinforce the premium, handcrafted feel.
+
+The final result should be bold, memorable, and unmistakably custom-designed—something that feels more like an award-winning editorial experience than a conventional website.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Here's the shot-list-style prompt, structured the way these tools actually respond to:
+
+PART 1 — AI-generated "The Problem" (aim for 4–5 clips, 5–8 seconds each, no dialogue, cinematic/documentary realism)
+
+Clip 1 — Establishing shot:
+"A cluttered home desk at night, warm desk lamp casting harsh light, laptop screen glowing on a tired young man's face. Stacks of printed certificate papers and sticky notes with handwritten names scattered around a coffee mug. He rubs his eyes, exhausted. Slow dolly-in, moody lighting, shallow depth of field, realistic cinematic style."
+
+Clip 2 — The repetitive task:
+"Close-up over-the-shoulder shot of hands typing on a laptop, editing a certificate template in a design program. He selects a text box, deletes a name, types a new one. Quick, repetitive, mechanical motion. Screen glow reflecting on his face. Slight motion blur on fast typing, tense pacing."
+
+Clip 3 — Manual repositioning, frustration building:
+"Extreme close-up on a laptop trackpad and cursor dragging a text label pixel by pixel across a certificate image, nudging it into place. Cut to the man's frustrated face, sighing, checking a clock that reads 1:47 AM. Papers and printed certificates pile up beside him in fast time-lapse."
+
+Clip 4 — The pile grows, exhaustion peaks:
+"Time-lapse style shot: a stack of printed certificates growing taller on a desk, lighting shifting from evening blue to harsh late-night lamp glow, coffee cups multiplying. The man leans back, drained, stretching his neck. Documentary realism, slightly desaturated color grade."
+
+Clip 5 — The handoff:
+"The man gathers a thick stack of printed certificates into a folder, exhausted, and hands it across a table to another person (an event organizer) who looks mildly impatient checking a watch. Office/hallway setting, natural light, slightly wide shot."
+
+Optional connective tissue: add a subtle ticking-clock sound and a "Day 1... Day 2..." style text overlay across clips 2–4 in your editor to sell the repetition/scale, since the AI clips themselves won't carry continuity between generations.
+
+Transition: hard cut or a fast whip-pan/glitch-wipe from Clip 5 into your real footage — this is the beat where the music should flip from tense to clean/upbeat.
+
+PART 2 — Real screen recording of genC (not AI — record this yourself)
+
+Shot list, in order, showing the same pain points being solved:
+
+Landing page hero — "Certificates people actually want to keep."
+Editor: upload a template.
+Drag the name field directly into position (the pointed contrast to Clip 3's pixel-nudging frustration) — this is your strongest visual callback.
+Switch to Advanced, add a second field, show it inherit the last field's styling instead of resetting (your most recent fix — nice detail to show).
+Hit Share → set a recipient list → Publish.
+Cut to a phone/second browser: the participant opens the link, verifies their email, types nothing else, downloads instantly.
+End card: your project name/tagline, maybe a stat like "one template, unlimited recipients."
+That final cut — frantic manual dragging vs. one clean drag, a whole pile of paper vs. one shareable link — is the whole pitch of your video in one visual beat, and it's literally true to what you built rather than something invented for the demo.

@@ -1,0 +1,20 @@
+I checked the claims against the actual code rather than relying on memory alone. Here's what's genuinely missing or inconsistent:
+
+1. Biggest gap — the recipient email-verification feature isn't documented anywhere in Chapters 4 or 5.
+
+Section 3.2.4 (Non-functional Requirements → Security) states: "Only authorized users should be able to download a certificate even if they have access to the shared link." That's a real requirement in your own report — and it's exactly what we just finished building (PublishedRecipient/RecipientVerification models, one-time email codes sent via Resend, signed stateless tokens via Django's signing module, throttled endpoints). But it's never mentioned in 4.2 Implementation Details, 4.3 Testing, or 5.5 Contributions. Right now your report states a security requirement and never shows it was satisfied — that's the kind of gap a supervisor flags immediately ("you said this was a requirement, where's the implementation?"). I'd add a subsection under 4.2 describing the email-gating flow, and mention it explicitly in 5.5 as a contribution, since it's arguably your strongest security feature.
+
+2. Two places where "Future Work" contradicts what's already built:
+
+5.6 lists CSV import as future work — but I confirmed RecipientManager.tsx already has a working CSV/JSON upload for recipient lists, and 4.2 itself already describes batch generation from a recipient list. This is already done, not future work — worth reconciling before a panel member notices the report contradicts itself.
+1.8's definition of "Dashboard" claims it lets organizers "track usage" — I checked all six dashboard pages and found no usage/analytics feature (no generation counts, no activity tracking). 5.6 correctly lists "analytics dashboards... to track certificate generation activity over time" as future work, which contradicts the 1.8 definition claiming it already exists. The 1.8 definition is overstated — I'd soften it to just template/collection management, not "usage tracking."
+3. Confirmed accurate, no changes needed (I verified these directly against the code, since they're exactly the kind of specific claims a panel might probe):
+
+Rate limiting on the generate/batch endpoints (GenerateThrottle) — real.
+Font path whitelisting against traversal (_safe_font_path, ALLOWED_FONT_RE) — real.
+CORS restricted to an explicit allow-list (CORS_ALLOW_ALL_ORIGINS = False) — real.
+The "capped at five hundred recipients per batch" claim in 1.6 — exactly matches MAX_RECIPIENTS = 500 in the code.
+4. Worth double-checking, I couldn't verify either way:
+
+4.1's table says the database is "PostgreSQL (cloud-hosted via Neon)." The code just reads DATABASE_URL generically from the environment — that's provider-agnostic, so it could be true for your actual deployed production database, but I have no way to confirm it's really Neon versus some other Postgres host. Worth a quick check before your defense so you're not caught guessing if asked.
+Nothing else in Chapters 3–5 describes functionality that doesn't exist — QR/blockchain verification, biometric ID, and institutional-database integration are all correctly scoped as out-of-scope in 1.6 and correctly listed as future work in 5.6, so those are consistent.
