@@ -387,6 +387,12 @@ def create_collection(request):
         return Response({"error": "name is required."}, status=400)
     if len(name) > 255:
         return Response({"error": "name is too long."}, status=400)
+    if Collections.objects.filter(
+        user=user, state="active", name__iexact=name
+    ).exists():
+        return Response(
+            {"error": "A collection with this name already exists."}, status=409
+        )
 
     collection = Collections.objects.create(user=user, name=name)
     serializer = CollectionSerializer(collection)
@@ -404,6 +410,14 @@ def rename_collection(request):
         return Response({"error": "collectionId is required."}, status=400)
     if not name:
         return Response({"error": "name is required."}, status=400)
+    if (
+        Collections.objects.filter(user=user, state="active", name__iexact=name)
+        .exclude(id=collection_id)
+        .exists()
+    ):
+        return Response(
+            {"error": "A collection with this name already exists."}, status=409
+        )
 
     updated = Collections.objects.filter(user=user, id=collection_id).update(name=name)
     if not updated:
