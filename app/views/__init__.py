@@ -23,7 +23,7 @@ from ..models import GenerationEvent, PublishedRecipient, TemplateParams, Templa
 from ..throttles import GenerateThrottle
 from ..util import parse_json_field, process_image
 
-# Must match app.views.participant.VERIFICATION_SALT / TOKEN_MAX_AGE_SECONDS —
+# Must match app.views.participant.VERIFICATION_SALT / TOKEN_MAX_AGE_SECONDS,
 # duplicated here (rather than imported) to avoid a views-package import cycle.
 VERIFICATION_SALT = "recipient-verification"
 TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24  # 24h
@@ -178,6 +178,45 @@ def upload(request):
 
     logger.info("Template uploaded: %s by user %s", final_public_id, user.pk)
     return Response({"public_id": final_public_id, "secure_url": url})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def upload_signature(request):
+    """
+    Uploads an organizer's signature (either a picked file or a PNG exported
+    from the draw pad) to Cloudinary and returns its URL for use as an image
+    field. Signatures are always set by the organizer in the editor, never
+    by recipients on the public participant link.
+    """
+    file = request.FILES.get("signature")
+    if not file:
+        return Response({"error": "No file provided."}, status=400)
+
+    err = _validate_image_file(file)
+    if err:
+        return Response({"error": err}, status=400)
+
+    try:
+        image = Image.open(file)
+        image.verify()
+    except Exception:
+        return Response({"error": "File is not a valid image."}, status=400)
+
+    file.seek(0)
+    image = Image.open(file).convert("RGBA")
+
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    try:
+        result = cloudinary.uploader.upload(buffer, folder="signatures")
+    except Exception as exc:
+        logger.error("Signature upload failed for user %s: %s", request.user.pk, exc)
+        return Response({"error": "Upload to storage failed."}, status=502)
+
+    return Response({"secure_url": result["secure_url"]})
 
 
 @api_view(["POST"])

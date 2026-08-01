@@ -1,10 +1,14 @@
 import json
+import logging
 import os
 import re
 from io import BytesIO
 from pathlib import Path
 
-from PIL import ImageDraw, ImageFont
+import requests
+from PIL import Image, ImageDraw, ImageFont
+
+logger = logging.getLogger("app")
 
 FONTS_DIR = Path(__file__).resolve().parent.parent / "fonts"
 ALLOWED_FONT_RE = re.compile(r"^[A-Za-z0-9 .\-_]+$")
@@ -12,6 +16,12 @@ MAX_TEXT_LENGTH = 200
 MAX_FONT_SIZE = 600
 MIN_FONT_SIZE = 6
 DEFAULT_FONT = "Bickham Script Pro Regular"
+
+# Signature images (organizer-supplied) are pasted at whatever size the field
+# specifies, clamped to a sane range so a malformed width/height can't blow
+# up memory or produce a nonsensical certificate.
+MIN_SIGNATURE_DIMENSION = 10
+MAX_SIGNATURE_DIMENSION = 1000
 
 
 def _safe_font_path(font_name: str) -> Path:
@@ -40,11 +50,61 @@ def _load_font(font_name: str, font_size: int) -> ImageFont.FreeTypeFont:
             return ImageFont.load_default()
 
 
-def process_image(image, fields: list) -> BytesIO:
-    """Draw all text fields onto the image and return a PNG buffer."""
+def _fetch_signature_image(url: str) -> "Image.Image | None":
+    """Fetch and decode a signature image, returning None on any failure —
+    a broken signature URL shouldn't fail the whole certificate render."""
+    try:
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        return Image.open(BytesIO(resp.content)).convert("RGBA")
+    except Exception as exc:
+        logger.warning("Failed to fetch signature image %s: %s", url, exc)
+        return None
+
+
+def _draw_image_field(image, field: dict, signature_cache: dict) -> None:
+    """Paste a signature (or other image field) onto the certificate."""
+    image_url = field["imageUrl"]
+
+    if image_url not in signature_cache:
+        signature_cache[image_url] = _fetch_signature_image(image_url)
+    sig_image = signature_cache[image_url]
+    if sig_image is None:
+        return
+
+    width = max(
+        MIN_SIGNATURE_DIMENSION,
+        min(MAX_SIGNATURE_DIMENSION, int(field.get("width", 200))),
+    )
+    height = max(
+        MIN_SIGNATURE_DIMENSION,
+        min(MAX_SIGNATURE_DIMENSION, int(field.get("height", 100))),
+    )
+    resized = sig_image.resize((width, height))
+
+    x_axis = int(field.get("x", 0))
+    y_axis = int(field.get("y", 0))
+    anchor_mode = field.get("anchorMode", "center")
+
+    paste_y = int(y_axis - height / 2)
+    paste_x = int(x_axis - width / 2) if anchor_mode == "center" else int(x_axis)
+
+    image.paste(resized, (paste_x, paste_y), resized)
+
+
+def process_image(image, fields: list, signature_cache: dict | None = None) -> BytesIO:
+    """Draw all text and image (signature) fields onto the image and return
+    a PNG buffer. Pass a shared signature_cache across repeated calls (e.g.
+    batch generation) so the same signature isn't re-fetched for every
+    recipient."""
     draw = ImageDraw.Draw(image)
+    cache = signature_cache if signature_cache is not None else {}
 
     for field in fields:
+        if field.get("imageUrl"):
+            _draw_image_field(image, field, cache)
+            continue
+
         text = str(field.get("text", ""))[:MAX_TEXT_LENGTH]
         if not text:
             continue

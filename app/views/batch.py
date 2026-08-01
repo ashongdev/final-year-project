@@ -78,6 +78,9 @@ def generate_batch(request):
     zip_buffer = io.BytesIO()
     errors = []
     success_count = 0
+    # Shared across every recipient so a signature field's image is fetched
+    # from Cloudinary once for the whole batch, not once per recipient.
+    signature_cache: dict = {}
 
     with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         for idx, recipient in enumerate(recipients):
@@ -94,7 +97,7 @@ def generate_batch(request):
 
             try:
                 img_copy = base_image.copy()
-                buf = process_image(img_copy, recipient_fields)
+                buf = process_image(img_copy, recipient_fields, signature_cache)
                 safe_name = name.replace("/", "").replace("\\", "").replace("\x00", "")
                 zf.writestr(f"{safe_name}.png", buf.getvalue())
                 buf.close()
