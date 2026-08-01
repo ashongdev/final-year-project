@@ -21,6 +21,12 @@ from .views.participant import (
     save_recipients,
     verify_recipient_code,
 )
+from .views.signatures import (
+    delete_signature,
+    list_signatures,
+    rename_signature,
+    save_signature,
+)
 
 
 def health(request):
@@ -67,4 +73,9 @@ urlpatterns = [
     path("collections/create/", create_collection, name="create_collection"),
     path("collections/rename/", rename_collection, name="rename_collection"),
     path("collections/delete/", delete_collection, name="delete_collection"),
+    # Signature library
+    path("signatures/", list_signatures, name="list_signatures"),
+    path("signatures/save/", save_signature, name="save_signature"),
+    path("signatures/rename/", rename_signature, name="rename_signature"),
+    path("signatures/delete/", delete_signature, name="delete_signature"),
 ]

@@ -19,7 +19,13 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
-from ..models import GenerationEvent, PublishedRecipient, TemplateParams, Templates
+from ..models import (
+    GenerationEvent,
+    PublishedRecipient,
+    Signature,
+    TemplateParams,
+    Templates,
+)
 from ..throttles import GenerateThrottle
 from ..util import parse_json_field, process_image
 
@@ -184,10 +190,18 @@ def upload(request):
 @permission_classes([IsAuthenticated])
 def upload_signature(request):
     """
-    Uploads an organizer's signature (either a picked file or a PNG exported
-    from the draw pad) to Cloudinary and returns its URL for use as an image
-    field. Signatures are always set by the organizer in the editor, never
-    by recipients on the public participant link.
+    Uploads an organizer's one-off, editor-scratch signature (either a
+    picked file or a PNG exported from the draw pad) to Cloudinary and
+    returns its URL for use as an image field. Signatures are always set by
+    the organizer in the editor, never by recipients on the public
+    participant link.
+
+    Pass existing_public_id to overwrite that same asset in place instead of
+    creating a new one each time a field's signature is redrawn/reuploaded,
+    the same pattern used for template re-uploads. The one exception:
+    existing_public_id is never honoured if it belongs to a saved Signature
+    library entry, so reworking a field's signature can never corrupt one of
+    the organizer's saved signatures, a fresh asset is created instead.
     """
     file = request.FILES.get("signature")
     if not file:
@@ -210,13 +224,28 @@ def upload_signature(request):
     image.save(buffer, format="PNG")
     buffer.seek(0)
 
+    existing_public_id = (request.data.get("existing_public_id") or "").strip() or None
+    can_overwrite = bool(existing_public_id) and not Signature.objects.filter(
+        user=request.user, public_id=existing_public_id
+    ).exists()
+
     try:
-        result = cloudinary.uploader.upload(buffer, folder="signatures")
+        if can_overwrite:
+            result = cloudinary.uploader.upload(
+                buffer,
+                public_id=existing_public_id,
+                overwrite=True,
+                invalidate=True,
+            )
+        else:
+            result = cloudinary.uploader.upload(buffer, folder="signatures")
     except Exception as exc:
         logger.error("Signature upload failed for user %s: %s", request.user.pk, exc)
         return Response({"error": "Upload to storage failed."}, status=502)
 
-    return Response({"secure_url": result["secure_url"]})
+    return Response(
+        {"secure_url": result["secure_url"], "public_id": result["public_id"]}
+    )
 
 
 @api_view(["POST"])

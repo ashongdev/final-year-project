@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Collections, TemplateParams, Templates
+from .models import Collections, Signature, TemplateParams, Templates
 
 
 class TemplateParamsSerializer(serializers.ModelSerializer):
@@ -32,3 +32,9 @@ class CollectionSerializer(serializers.ModelSerializer):
             collection_id=obj.id,
             state="active",
         ).count()
+
+
+class SignatureSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Signature
+        fields = ["id", "name", "url", "public_id", "created_at"]

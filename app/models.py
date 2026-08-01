@@ -64,6 +64,33 @@ class Collections(models.Model):
         return f"{self.name} (user={self.user_id})"
 
 
+class Signature(models.Model):
+    """
+    A saved, reusable signature image (drawn or uploaded) in the organizer's
+    library. Distinct from an ephemeral signature attached directly to a
+    field in the editor: library signatures are protected from the
+    overwrite-in-place behavior used for one-off editor signatures, so
+    reworking a field's throwaway signature never corrupts a saved one.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        db_index=True,
+        related_name="signatures",
+    )
+    name = models.CharField(max_length=255, default="Signature", blank=True)
+    url = models.CharField(max_length=500)
+    public_id = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.name} (user={self.user_id})"
+
+
 class TemplateParams(models.Model):
     """
     Stores the field configuration for a published template.
