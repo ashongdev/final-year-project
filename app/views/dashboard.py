@@ -2,19 +2,152 @@
 Dashboard views: templates and collections CRUD for authenticated users.
 """
 import logging
+from datetime import timedelta
 
+from django.db.models import Sum
+from django.db.models.functions import TruncDate
+from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from ..models import Collections, Templates
+from ..models import (
+    Collections,
+    GenerationEvent,
+    PublishedRecipient,
+    RecipientVerification,
+    Templates,
+)
 from ..pagination import MAX_PAGE_SIZE, get_pagination_params, paginate_queryset
 from ..serializer import CollectionSerializer, TemplateSerializer
 
 logger = logging.getLogger("app")
 
+ANALYTICS_TREND_DAYS = 30
+ANALYTICS_TOP_TEMPLATES = 8
+ANALYTICS_RECENT_EVENTS = 10
+
 
 # ─── Templates ────────────────────────────────────────────────────────────────
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def dashboard_stats(request):
+    """Aggregate usage stats for the dashboard overview."""
+    user = request.user
+    total_generated = Templates.objects.filter(user=user, state="active").aggregate(
+        total=Sum("generation_count")
+    )["total"] or 0
+    return Response({"total_generated": total_generated})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def analytics(request):
+    """
+    Full analytics payload for the dashboard analytics page: totals, a daily
+    trend, self-serve vs batch split, top templates, recipient/verification
+    funnel, and a recent-activity feed. Everything is scoped to the
+    requesting user's templates.
+    """
+    user = request.user
+    active_templates = Templates.objects.filter(user=user, state="active")
+
+    # ── Totals ──
+    total_generated = active_templates.aggregate(total=Sum("generation_count"))[
+        "total"
+    ] or 0
+
+    by_kind_rows = (
+        GenerationEvent.objects.filter(template__user=user)
+        .values("kind")
+        .annotate(total=Sum("count"))
+    )
+    by_kind = {"self_serve": 0, "batch": 0}
+    for row in by_kind_rows:
+        by_kind[row["kind"]] = row["total"] or 0
+
+    # ── Daily trend (last N days, zero-filled) ──
+    start_date = timezone.localdate() - timedelta(days=ANALYTICS_TREND_DAYS - 1)
+    daily_rows = (
+        GenerationEvent.objects.filter(
+            template__user=user, created_at__date__gte=start_date
+        )
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(total=Sum("count"))
+    )
+    totals_by_day = {row["day"]: row["total"] for row in daily_rows}
+    daily = [
+        {
+            "date": (start_date + timedelta(days=i)).isoformat(),
+            "count": totals_by_day.get(start_date + timedelta(days=i), 0),
+        }
+        for i in range(ANALYTICS_TREND_DAYS)
+    ]
+
+    # ── Top templates ──
+    top_templates = [
+        {
+            "id": t.id,
+            "name": t.name or t.public_id,
+            "public_id": t.public_id,
+            "url": t.url,
+            "generation_count": t.generation_count,
+        }
+        for t in active_templates.order_by("-generation_count", "-updated_at")[
+            :ANALYTICS_TOP_TEMPLATES
+        ]
+        if t.generation_count > 0
+    ]
+
+    # ── Recipients / verification funnel ──
+    recipients_invited = PublishedRecipient.objects.filter(
+        template__user=user
+    ).count()
+    gated_templates = (
+        PublishedRecipient.objects.filter(template__user=user)
+        .values("template_id")
+        .distinct()
+        .count()
+    )
+    codes_requested = RecipientVerification.objects.filter(
+        template__user=user
+    ).count()
+    codes_verified = RecipientVerification.objects.filter(
+        template__user=user, consumed=True
+    ).count()
+
+    # ── Recent activity ──
+    recent_events = (
+        GenerationEvent.objects.filter(template__user=user)
+        .select_related("template")
+        .order_by("-created_at")[:ANALYTICS_RECENT_EVENTS]
+    )
+    recent_activity = [
+        {
+            "template_name": e.template.name or e.template.public_id,
+            "template_id": e.template_id,
+            "kind": e.kind,
+            "count": e.count,
+            "created_at": e.created_at.isoformat(),
+        }
+        for e in recent_events
+    ]
+
+    return Response(
+        {
+            "total_generated": total_generated,
+            "by_kind": by_kind,
+            "daily": daily,
+            "top_templates": top_templates,
+            "recipients_invited": recipients_invited,
+            "gated_templates": gated_templates,
+            "codes_requested": codes_requested,
+            "codes_verified": codes_verified,
+            "recent_activity": recent_activity,
+        }
+    )
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

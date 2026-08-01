@@ -12,6 +12,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.http import HttpResponse
 
+from django.db import models
+
+from ..models import GenerationEvent, Templates
 from ..throttles import GenerateThrottle
 from ..util import parse_json_field, process_image, MAX_TEXT_LENGTH
 from ..views import CLOUDINARY_CLOUD_NAME, _validate_image_file
@@ -74,6 +77,7 @@ def generate_batch(request):
 
     zip_buffer = io.BytesIO()
     errors = []
+    success_count = 0
 
     with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         for idx, recipient in enumerate(recipients):
@@ -94,9 +98,22 @@ def generate_batch(request):
                 safe_name = name.replace("/", "").replace("\\", "").replace("\x00", "")
                 zf.writestr(f"{safe_name}.png", buf.getvalue())
                 buf.close()
+                success_count += 1
             except Exception as exc:
                 logger.warning("Batch: failed to generate for %s: %s", name, exc)
                 errors.append(f"Recipient {idx + 1} ({name}): generation failed.")
+
+    if not in_editor and success_count:
+        # Only count against a published template — editor-only batch tests
+        # (raw file upload, no certificateId) aren't real issuances.
+        tpl = Templates.objects.filter(public_id=public_id).first()
+        if tpl:
+            Templates.objects.filter(pk=tpl.pk).update(
+                generation_count=models.F("generation_count") + success_count
+            )
+            GenerationEvent.objects.create(
+                template=tpl, kind=GenerationEvent.Kind.BATCH, count=success_count
+            )
 
     zip_buffer.seek(0)
     response = HttpResponse(

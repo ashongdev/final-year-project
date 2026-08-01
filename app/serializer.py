@@ -15,7 +15,7 @@ class TemplateSerializer(serializers.ModelSerializer):
         fields = [
             "id", "public_id", "name", "url",
             "collection_id", "trashed", "state",
-            "created_at", "updated_at",
+            "created_at", "updated_at", "generation_count",
         ]
 
 

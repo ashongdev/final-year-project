@@ -19,7 +19,7 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
-from ..models import PublishedRecipient, TemplateParams, Templates
+from ..models import GenerationEvent, PublishedRecipient, TemplateParams, Templates
 from ..throttles import GenerateThrottle
 from ..util import parse_json_field, process_image
 
@@ -330,6 +330,18 @@ def generate(request):
     except Exception as exc:
         logger.exception("Image processing failed: %s", exc)
         return Response({"error": "Certificate generation failed."}, status=500)
+
+    if not in_editor:
+        # Only count generations against a published template — editor-only
+        # test downloads (in_editor=True, raw file upload) aren't real issuances.
+        tpl = Templates.objects.filter(public_id=public_id).first()
+        if tpl:
+            Templates.objects.filter(pk=tpl.pk).update(
+                generation_count=models.F("generation_count") + 1
+            )
+            GenerationEvent.objects.create(
+                template=tpl, kind=GenerationEvent.Kind.SELF_SERVE, count=1
+            )
 
     image_data = buffer.getvalue()
     buffer.close()

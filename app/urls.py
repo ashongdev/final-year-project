@@ -4,8 +4,10 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import GoogleLogin, check_public_id, generate, me, upload
 from .views.batch import generate_batch
 from .views.dashboard import (
+    analytics,
     assign_collection,
     create_collection,
+    dashboard_stats,
     delete_collection,
     list_collections,
     list_templates,
@@ -51,6 +53,8 @@ urlpatterns = [
         name="verify_recipient_code",
     ),
     # Templates
+    path("dashboard/stats/", dashboard_stats, name="dashboard_stats"),
+    path("dashboard/analytics/", analytics, name="analytics"),
     path("templates/", list_templates, name="list_templates"),
     path("templates/rename/", rename_template, name="rename_template"),
     path("templates/state/", set_template_state, name="set_template_state"),

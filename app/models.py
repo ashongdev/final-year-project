@@ -22,6 +22,12 @@ class Templates(models.Model):
         default="active",
         db_index=True,
     )
+    # Incremented each time a certificate is actually generated against this
+    # published template — self-service downloads via the public link and
+    # organizer-driven batch generation. Editor-only preview/test downloads
+    # (which upload a raw file rather than referencing a published template)
+    # are not counted, since those aren't real certificate issuances.
+    generation_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, db_index=True)
 
@@ -137,6 +143,39 @@ class PublishedRecipient(models.Model):
 
     def __str__(self):
         return f"{self.email} for template {self.template_id}"
+
+
+class GenerationEvent(models.Model):
+    """
+    One row per certificate-generation request against a published template,
+    logged alongside the running Templates.generation_count so the dashboard
+    can show trends over time (daily volume, self-serve vs batch split,
+    recent activity) rather than just a single running total.
+    """
+
+    class Kind(models.TextChoices):
+        SELF_SERVE = "self_serve", "Self-Serve"
+        BATCH = "batch", "Batch"
+
+    template = models.ForeignKey(
+        Templates,
+        on_delete=models.CASCADE,
+        related_name="events",
+        db_index=True,
+    )
+    kind = models.CharField(max_length=20, choices=Kind.choices)
+    # Batch events represent multiple certificates issued in one request.
+    count = models.PositiveIntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["template", "created_at"], name="genevent_template_created_idx"),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.kind} x{self.count} on template {self.template_id}"
 
 
 def _generate_verification_code() -> str:
