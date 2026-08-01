@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1414" height="1000" viewBox="0 0 1414 1000">
+  <defs>
+    <linearGradient id="corp-bg" x1="0" y1="0" x2="1414" y2="1000" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#eef4fb"/>
+    </linearGradient>
+  </defs>
+  <rect width="1414" height="1000" fill="url(#corp-bg)"/>
+  <rect x="0" y="0" width="1414" height="120" fill="#0066cc"/>
+  <text x="707" y="75" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="28" fill="#fff" font-weight="600">COMPANY NAME</text>
+  <text x="707" y="220" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="40" fill="#003d7a">Certificate of Appreciation</text>
+  <rect x="557" y="250" width="300" height="3" fill="#0066cc"/>
+  <text x="707" y="330" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#555">This certificate is proudly presented to</text>
+  <text x="707" y="520" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#555">In recognition of valuable contributions</text>
+  <rect x="0" y="920" width="1414" height="80" fill="#0066cc"/>
+  <text x="707" y="970" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#fff">www.company.com</text>
+</svg>

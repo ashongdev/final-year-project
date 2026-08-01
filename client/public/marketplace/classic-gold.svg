@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1414" height="1000" viewBox="0 0 1414 1000">
+  <rect width="1414" height="1000" fill="#fffef8"/>
+  <rect x="40" y="40" width="1334" height="920" fill="none" stroke="#c9a227" stroke-width="6"/>
+  <rect x="60" y="60" width="1294" height="880" fill="none" stroke="#c9a227" stroke-width="2"/>
+  <rect x="80" y="80" width="1254" height="840" fill="none" stroke="#e8d48b" stroke-width="1"/>
+  <text x="707" y="180" text-anchor="middle" font-family="Georgia, serif" font-size="52" fill="#8b6914" letter-spacing="8">CERTIFICATE</text>
+  <text x="707" y="230" text-anchor="middle" font-family="Georgia, serif" font-size="22" fill="#a08030" letter-spacing="4">OF ACHIEVEMENT</text>
+  <line x1="400" y1="260" x2="1014" y2="260" stroke="#c9a227" stroke-width="1"/>
+  <text x="707" y="340" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#666">This is to certify that</text>
+  <text x="707" y="520" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#666">has successfully completed the requirements</text>
+  <text x="707" y="560" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#666">and is hereby awarded this certificate</text>
+  <line x1="200" y1="820" x2="500" y2="820" stroke="#c9a227" stroke-width="1"/>
+  <text x="350" y="850" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#888">Authorized Signature</text>
+  <line x1="914" y1="820" x2="1214" y2="820" stroke="#c9a227" stroke-width="1"/>
+  <text x="1064" y="850" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#888">Date</text>
+</svg>

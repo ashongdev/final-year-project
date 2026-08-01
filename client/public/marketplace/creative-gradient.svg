@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1414" height="1000" viewBox="0 0 1414 1000">
+  <defs>
+    <linearGradient id="creative-bg" x1="0" y1="0" x2="1414" y2="1000" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#667eea"/>
+      <stop offset="50%" stop-color="#764ba2"/>
+      <stop offset="100%" stop-color="#f093fb"/>
+    </linearGradient>
+  </defs>
+  <rect width="1414" height="1000" fill="url(#creative-bg)"/>
+  <rect x="60" y="60" width="1294" height="880" fill="#fff" rx="16"/>
+  <text x="707" y="200" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="16" fill="#764ba2" letter-spacing="6">HACKATHON</text>
+  <text x="707" y="280" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="42" fill="#333" font-weight="700">Winner Certificate</text>
+  <text x="707" y="360" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#666">Awarded to</text>
+  <text x="707" y="540" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#666">For exceptional innovation and teamwork</text>
+  <rect x="557" y="620" width="300" height="40" rx="20" fill="#667eea"/>
+  <text x="707" y="647" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#fff">EVENT 2024</text>
+</svg>

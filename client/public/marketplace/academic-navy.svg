@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1414" height="1000" viewBox="0 0 1414 1000">
+  <rect width="1414" height="1000" fill="#f5f7fa"/>
+  <rect x="30" y="30" width="1354" height="940" fill="#fff" stroke="#1e3a5f" stroke-width="4"/>
+  <rect x="50" y="50" width="1314" height="900" fill="none" stroke="#1e3a5f" stroke-width="1"/>
+  <circle cx="707" cy="130" r="40" fill="none" stroke="#1e3a5f" stroke-width="2"/>
+  <text x="707" y="138" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#1e3a5f"></text>
+  <text x="707" y="220" text-anchor="middle" font-family="Georgia, serif" font-size="44" fill="#1e3a5f">Certificate of Excellence</text>
+  <text x="707" y="270" text-anchor="middle" font-family="Georgia, serif" font-size="16" fill="#4a6785">Academic Achievement Award</text>
+  <line x1="500" y1="300" x2="914" y2="300" stroke="#1e3a5f" stroke-width="1"/>
+  <text x="707" y="360" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#555">The faculty hereby recognizes</text>
+  <text x="707" y="540" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#555">for exceptional academic performance</text>
+  <text x="350" y="860" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#1e3a5f">Dean of Faculty</text>
+  <line x1="250" y1="830" x2="450" y2="830" stroke="#1e3a5f" stroke-width="1"/>
+  <text x="1064" y="860" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#1e3a5f">Registrar</text>
+  <line x1="964" y1="830" x2="1164" y2="830" stroke="#1e3a5f" stroke-width="1"/>
+</svg>

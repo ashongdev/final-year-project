@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1414" height="1000" viewBox="0 0 1414 1000">
+  <rect width="1414" height="1000" fill="#fff9f5"/>
+  <rect x="50" y="50" width="1314" height="900" fill="none" stroke="#d4a574" stroke-width="3" rx="4"/>
+  <path d="M50 200 Q150 100 250 200 T450 200" fill="none" stroke="#e8c9a8" stroke-width="2"/>
+  <path d="M964 200 Q1064 100 1164 200 T1364 200" fill="none" stroke="#e8c9a8" stroke-width="2"/>
+  <path d="M50 800 Q150 900 250 800 T450 800" fill="none" stroke="#e8c9a8" stroke-width="2"/>
+  <path d="M964 800 Q1064 900 1164 800 T1364 800" fill="none" stroke="#e8c9a8" stroke-width="2"/>
+  <text x="707" y="190" text-anchor="middle" font-family="Georgia, serif" font-size="48" fill="#8b5a2b" font-style="italic">Certificate</text>
+  <text x="707" y="240" text-anchor="middle" font-family="Georgia, serif" font-size="20" fill="#a07040">of Participation</text>
+  <text x="707" y="340" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#777">This certificate is awarded to</text>
+  <text x="707" y="530" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#777">for participating in our special event</text>
+  <text x="707" y="860" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#a07040">& With Gratitude &</text>
+</svg>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1414" height="1000" viewBox="0 0 1414 1000">
+  <rect width="1414" height="1000" fill="#fafafa"/>
+  <rect x="0" y="0" width="8" height="1000" fill="#1a1a2e"/>
+  <text x="707" y="200" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#888" letter-spacing="12">CERTIFICATE</text>
+  <text x="707" y="280" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="36" fill="#1a1a2e" font-weight="300">Certificate of Completion</text>
+  <rect x="607" y="310" width="200" height="2" fill="#1a1a2e"/>
+  <text x="707" y="380" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="16" fill="#666">Presented to</text>
+  <text x="707" y="560" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="16" fill="#666">For outstanding performance and dedication</text>
+  <text x="250" y="880" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#aaa">ISSUED BY ORGANIZATION</text>
+  <text x="1164" y="880" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#aaa">2024</text>
+</svg>

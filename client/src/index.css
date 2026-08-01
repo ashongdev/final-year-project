@@ -1,0 +1,279 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+	font-family: "Bickham Script Pro Regular";
+	src: url("/fonts/Bickham Script Pro Regular.ttf") format("truetype");
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "Garamond";
+	src: url("/fonts/Garamond.ttf") format("truetype");
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "Kunstler Script";
+	src: url("/fonts/Kunstler Script.ttf") format("truetype");
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "Snell Roundhand";
+	src: url("/fonts/Snell Roundhand.ttf") format("truetype");
+	font-display: swap;
+}
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+	:root {
+		--background: 40 38% 96%;
+		--foreground: 20 20% 13%;
+
+		--card: 40 33% 98%;
+		--card-foreground: 20 20% 13%;
+
+		--popover: 40 33% 98%;
+		--popover-foreground: 20 20% 13%;
+
+		/* Bold teal accent */
+		--primary: 175 68% 26%;
+		--primary-foreground: 40 40% 97%;
+
+		/* Terracotta secondary accent */
+		--secondary: 16 68% 52%;
+		--secondary-foreground: 40 40% 97%;
+
+		--muted: 36 26% 91%;
+		--muted-foreground: 25 14% 40%;
+
+		--accent: 36 26% 91%;
+		--accent-foreground: 20 20% 13%;
+
+		--destructive: 8 62% 45%;
+		--destructive-foreground: 40 40% 97%;
+
+		--border: 32 20% 83%;
+		--input: 32 20% 83%;
+		--ring: 175 68% 26%;
+
+		--radius: 0.375rem;
+
+		/* Custom design tokens */
+		--shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+		--shadow-medium: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+		--transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.dark {
+		--background: 22 16% 8%;
+		--foreground: 38 28% 92%;
+
+		--card: 22 15% 11%;
+		--card-foreground: 38 28% 92%;
+
+		--popover: 22 15% 11%;
+		--popover-foreground: 38 28% 92%;
+
+		--primary: 174 55% 46%;
+		--primary-foreground: 22 16% 8%;
+
+		--secondary: 16 62% 56%;
+		--secondary-foreground: 22 16% 8%;
+
+		--muted: 22 12% 16%;
+		--muted-foreground: 35 15% 63%;
+
+		--accent: 22 12% 16%;
+		--accent-foreground: 38 28% 92%;
+
+		--destructive: 8 55% 50%;
+		--destructive-foreground: 38 28% 92%;
+
+		--border: 22 12% 20%;
+		--input: 22 12% 20%;
+		--ring: 174 55% 46%;
+	}
+}
+
+@layer utilities {
+	/* Subtle paper grain for editorial surfaces */
+	.paper-grain {
+		background-image: radial-gradient(
+			hsl(var(--foreground) / 0.05) 0.5px,
+			transparent 0.5px
+		);
+		background-size: 4px 4px;
+	}
+
+	/* Torn-paper top edge, used on archival/trash surfaces */
+	.torn-edge {
+		clip-path: polygon(
+			0% 6px, 3% 0px, 6% 5px, 9% 1px, 12% 6px, 15% 0px, 18% 5px, 21% 1px,
+			24% 6px, 27% 0px, 30% 5px, 33% 1px, 36% 6px, 39% 0px, 42% 5px,
+			45% 1px, 48% 6px, 51% 0px, 54% 5px, 57% 1px, 60% 6px, 63% 0px,
+			66% 5px, 69% 1px, 72% 6px, 75% 0px, 78% 5px, 81% 1px, 84% 6px,
+			87% 0px, 90% 5px, 93% 1px, 96% 6px, 100% 0px,
+			100% 100%, 0% 100%
+		);
+	}
+
+	.font-hand {
+		font-family: "Great Vibes", cursive;
+	}
+}
+
+@layer base {
+	* {
+		@apply border-border;
+	}
+
+	body {
+		@apply bg-background text-foreground font-sans antialiased;
+	}
+
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		@apply font-semibold tracking-tight;
+	}
+}
+
+@layer utilities {
+	.transition-smooth {
+		transition: var(--transition-smooth);
+	}
+
+	.shadow-soft {
+		box-shadow: var(--shadow-soft);
+	}
+
+	.shadow-medium {
+		box-shadow: var(--shadow-medium);
+	}
+}
+
+/* Driver.js Tour Styling - Element-anchored guided tour */
+.driver-popover {
+	background-color: hsl(var(--card)) !important;
+	color: hsl(var(--card-foreground)) !important;
+	border: 1px solid hsl(var(--border)) !important;
+	border-radius: var(--radius) !important;
+	box-shadow:
+		0 20px 25px -5px rgb(0 0 0 / 0.1),
+		0 8px 10px -6px rgb(0 0 0 / 0.1),
+		0 0 0 1px rgb(0 0 0 / 0.05) !important;
+	max-width: 320px !important;
+	padding: 1rem !important;
+}
+
+.driver-popover-title {
+	font-size: 1rem !important;
+	font-weight: 600 !important;
+	color: hsl(var(--foreground)) !important;
+	margin-bottom: 0.5rem !important;
+	line-height: 1.4 !important;
+}
+
+.driver-popover-description {
+	color: hsl(var(--muted-foreground)) !important;
+	font-size: 0.875rem !important;
+	line-height: 1.6 !important;
+	margin-bottom: 0.75rem !important;
+}
+
+.driver-popover-progress-text {
+	color: hsl(var(--muted-foreground)) !important;
+	font-size: 0.75rem !important;
+	font-weight: 500 !important;
+}
+
+.driver-popover-footer {
+	margin-top: 1rem !important;
+	padding-top: 0.75rem !important;
+	border-top: 1px solid hsl(var(--border)) !important;
+}
+
+.driver-popover-prev-btn,
+.driver-popover-next-btn {
+	background-color: hsl(var(--primary)) !important;
+	color: hsl(var(--primary-foreground)) !important;
+	border: none !important;
+	border-radius: calc(var(--radius) - 2px) !important;
+	padding: 0.5rem 1rem !important;
+	font-size: 0.8125rem !important;
+	font-weight: 500 !important;
+	cursor: pointer !important;
+	transition: all 0.15s ease !important;
+}
+
+.driver-popover-prev-btn:hover,
+.driver-popover-next-btn:hover {
+	opacity: 0.9 !important;
+	transform: translateY(-1px) !important;
+}
+
+.driver-popover-prev-btn {
+	background-color: hsl(var(--muted)) !important;
+	color: hsl(var(--foreground)) !important;
+}
+
+.driver-popover-prev-btn:hover {
+	background-color: hsl(var(--accent)) !important;
+}
+
+.driver-popover-close-btn {
+	color: hsl(var(--muted-foreground)) !important;
+	width: 28px !important;
+	height: 28px !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	border-radius: calc(var(--radius) - 4px) !important;
+	transition: all 0.15s ease !important;
+}
+
+.driver-popover-close-btn:hover {
+	color: hsl(var(--foreground)) !important;
+	background-color: hsl(var(--muted)) !important;
+}
+
+/* Spotlight/stage styling */
+.driver-active-element {
+	z-index: 10000 !important;
+}
+
+/* Arrow styling for all positions */
+.driver-popover-arrow {
+	border: 8px solid transparent !important;
+}
+
+.driver-popover-arrow-side-left {
+	border-right-color: hsl(var(--card)) !important;
+}
+
+.driver-popover-arrow-side-right {
+	border-left-color: hsl(var(--card)) !important;
+}
+
+.driver-popover-arrow-side-top {
+	border-bottom-color: hsl(var(--card)) !important;
+}
+
+.driver-popover-arrow-side-bottom {
+	border-top-color: hsl(var(--card)) !important;
+}
+
+/* Smooth transitions for popover movement */
+.driver-popover,
+.driver-overlay {
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
