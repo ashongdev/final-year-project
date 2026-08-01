@@ -362,6 +362,36 @@ def _check_recipient_gate(public_id: str, verification_token: str) -> Response |
     return None
 
 
+def _check_self_serve_cap(public_id: str) -> Response | None:
+    """
+    Returns a 402 Response once a free-tier template's open public link has
+    been used to generate its free quota of certificates. Scoped per
+    template (the link being consumed), gated on the owner's plan since
+    self-serve recipients never have accounts of their own.
+    """
+    template = Templates.objects.filter(public_id=public_id).first()
+    if not template or user_has_pro_access(template.user):
+        return None
+
+    used = GenerationEvent.objects.filter(
+        template=template, kind=GenerationEvent.Kind.SELF_SERVE
+    ).count()
+    if used < settings.FREE_SELF_SERVE_CAP:
+        return None
+
+    return Response(
+        {
+            "error": (
+                f"This certificate link has reached its free limit of "
+                f"{settings.FREE_SELF_SERVE_CAP} generations. Ask the "
+                "organizer to upgrade to Pro to keep it open."
+            ),
+            "upgrade_required": True,
+        },
+        status=402,
+    )
+
+
 def _check_field_count_gate(
     fields: list, in_editor: bool, public_id: str, request_user
 ) -> Response | None:
@@ -454,6 +484,10 @@ def generate(request):
             return Response({"error": "certificateId is too long."}, status=400)
 
         err = _check_recipient_gate(public_id, data.get("verificationToken", ""))
+        if err:
+            return err
+
+        err = _check_self_serve_cap(public_id)
         if err:
             return err
 
