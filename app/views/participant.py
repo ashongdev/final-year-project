@@ -18,6 +18,7 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from ..billing import user_has_pro_access
 from ..models import PublishedRecipient, RecipientVerification, Templates
 from ..throttles import VerificationThrottle
 from ..util import parse_json_field
@@ -27,13 +28,27 @@ logger = logging.getLogger("app")
 resend.api_key = settings.RESEND_API_KEY
 
 VERIFICATION_SALT = "recipient-verification"
-TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24  # 24h — see PublishedRecipient.download_count
+TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24  # 24h, see PublishedRecipient.download_count
 
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def save_recipients(request):
-    """Replace the recipient allow-list for a template the user owns."""
+    """Replace the recipient allow-list for a template the user owns.
+
+    Pro-only: gating a public link behind email verification is a paid
+    feature, so a free user's recipient list is rejected outright rather
+    than silently saved-but-unenforced.
+    """
+    if not user_has_pro_access(request.user):
+        return Response(
+            {
+                "error": "Recipient access control is a Pro feature.",
+                "upgrade_required": True,
+            },
+            status=402,
+        )
+
     public_id = (request.data.get("public_id") or "").strip()
     if not public_id:
         return Response({"error": "public_id is required."}, status=400)

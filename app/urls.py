@@ -27,6 +27,13 @@ from .views.signatures import (
     rename_signature,
     save_signature,
 )
+from .views.billing import (
+    billing_status,
+    create_billing_portal_session,
+    create_credit_checkout,
+    create_subscription_checkout,
+    stripe_webhook,
+)
 
 
 def health(request):
@@ -78,4 +85,22 @@ urlpatterns = [
     path("signatures/save/", save_signature, name="save_signature"),
     path("signatures/rename/", rename_signature, name="rename_signature"),
     path("signatures/delete/", delete_signature, name="delete_signature"),
+    # Billing
+    path("billing/status/", billing_status, name="billing_status"),
+    path(
+        "billing/checkout/subscription/",
+        create_subscription_checkout,
+        name="create_subscription_checkout",
+    ),
+    path(
+        "billing/checkout/credits/",
+        create_credit_checkout,
+        name="create_credit_checkout",
+    ),
+    path(
+        "billing/portal/",
+        create_billing_portal_session,
+        name="create_billing_portal_session",
+    ),
+    path("billing/webhook/", stripe_webhook, name="stripe_webhook"),
 ]

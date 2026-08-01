@@ -10,6 +10,7 @@ import requests
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
+from django.conf import settings
 from django.core import signing
 from django.db import models
 from django.http import HttpResponse
@@ -19,6 +20,7 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
+from ..billing import user_has_pro_access
 from ..models import (
     GenerationEvent,
     PublishedRecipient,
@@ -165,6 +167,22 @@ def upload(request):
             "Template replaced in place: %s by user %s", final_public_id, user.pk
         )
         return Response({"public_id": final_public_id, "secure_url": url})
+
+    # This is a genuinely new template (not overwriting one already owned),
+    # so it counts against the free tier's active-template cap.
+    if not user_has_pro_access(user):
+        active_count = Templates.objects.filter(user=user, state="active").count()
+        if active_count >= settings.FREE_TEMPLATE_CAP:
+            return Response(
+                {
+                    "error": (
+                        f"Free accounts are limited to {settings.FREE_TEMPLATE_CAP} "
+                        "templates. Upgrade to Pro for unlimited templates."
+                    ),
+                    "upgrade_required": True,
+                },
+                status=402,
+            )
 
     try:
         result = cloudinary.uploader.upload(buffer, public_id=requested_public_id)
@@ -320,10 +338,61 @@ def _check_recipient_gate(public_id: str, verification_token: str) -> Response |
             status=403,
         )
 
+    # Redownloads beyond the free cap require the template owner to be Pro
+    # (the organizer's plan, not the recipient's — recipients never have
+    # accounts here).
+    if (
+        recipient.download_count >= settings.FREE_REDOWNLOAD_CAP
+        and not user_has_pro_access(template.user)
+    ):
+        return Response(
+            {
+                "error": (
+                    "This certificate has reached its free redownload limit. "
+                    "Ask the organizer to upgrade to Pro for unlimited redownloads."
+                ),
+                "gated": True,
+            },
+            status=403,
+        )
+
     PublishedRecipient.objects.filter(pk=recipient.pk).update(
         download_count=models.F("download_count") + 1
     )
     return None
+
+
+def _check_field_count_gate(
+    fields: list, in_editor: bool, public_id: str, request_user
+) -> Response | None:
+    """
+    More than one field is the Advanced editor's whole feature, a Pro-only
+    capability. For a published template, the relevant plan is the
+    template owner's (self-serve recipients never have accounts); for an
+    in-editor draft with no persisted template yet, it's whoever is signed
+    in and generating right now.
+    """
+    if len(fields) <= settings.FREE_FIELD_CAP:
+        return None
+
+    if not in_editor and public_id:
+        template = Templates.objects.filter(public_id=public_id).first()
+        if template and user_has_pro_access(template.user):
+            return None
+    elif (
+        request_user
+        and request_user.is_authenticated
+        and user_has_pro_access(request_user)
+    ):
+        return None
+
+    return Response(
+        {
+            "error": "Multiple fields require a Pro plan (the Advanced editor).",
+            "upgrade_required": True,
+        },
+        status=402,
+    )
 
 
 @api_view(["POST"])
@@ -362,6 +431,10 @@ def generate(request):
 
     if not isinstance(fields, list) or not fields:
         return Response({"error": "No fields provided."}, status=400)
+
+    field_gate_err = _check_field_count_gate(fields, in_editor, public_id, request.user)
+    if field_gate_err:
+        return field_gate_err
 
     if in_editor:
         template_file = request.FILES.get("template")

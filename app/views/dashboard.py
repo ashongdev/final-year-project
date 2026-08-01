@@ -11,6 +11,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from ..billing import user_has_pro_access
 from ..models import (
     Collections,
     GenerationEvent,
@@ -72,7 +73,15 @@ def analytics(request):
     trend, self-serve vs batch split, template-activity trend (uploads,
     shares, loads), top templates, recipient/verification funnel, and a
     recent-activity feed. Everything is scoped to the requesting user.
+
+    Pro-only: free users get dashboard_stats (basic counts) instead.
     """
+    if not user_has_pro_access(request.user):
+        return Response(
+            {"error": "Full analytics is a Pro feature.", "upgrade_required": True},
+            status=402,
+        )
+
     user = request.user
     active_templates = Templates.objects.filter(user=user, state="active")
 

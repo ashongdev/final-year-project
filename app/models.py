@@ -270,3 +270,50 @@ class RecipientVerification(models.Model):
 
     def __str__(self):
         return f"Verification for {self.email} on template {self.template_id}"
+
+
+class Subscription(models.Model):
+    """
+    A user's billing state. Kept in sync with Stripe via webhooks, not read
+    directly from Stripe on every request. Two independent paid mechanisms:
+
+    - tier/status: an active Stripe subscription unlocks the full Pro
+      feature set (advanced editor, unlimited templates, recipient
+      verification, unlimited redownloads, analytics).
+    - credit_balance: a one-time, non-expiring purchase that only ever
+      raises the free tier's batch-generation cap, consumed per certificate
+      generated beyond that cap. Independent of tier, since a free user can
+      buy credits without subscribing.
+    """
+
+    class Tier(models.TextChoices):
+        FREE = "free", "Free"
+        PRO = "pro", "Pro"
+
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        PAST_DUE = "past_due", "Past Due"
+        CANCELED = "canceled", "Canceled"
+        NONE = "none", "None"
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="subscription",
+    )
+    tier = models.CharField(max_length=10, choices=Tier.choices, default=Tier.FREE)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.NONE)
+    stripe_customer_id = models.CharField(max_length=255, blank=True, default="", db_index=True)
+    stripe_subscription_id = models.CharField(max_length=255, blank=True, default="", db_index=True)
+    interval = models.CharField(max_length=10, blank=True, default="")  # "month" | "year"
+    current_period_end = models.DateTimeField(null=True, blank=True)
+    cancel_at_period_end = models.BooleanField(default=False)
+    credit_balance = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def is_pro(self) -> bool:
+        return self.tier == self.Tier.PRO and self.status == self.Status.ACTIVE
+
+    def __str__(self):
+        return f"{self.tier} ({self.status}) for user {self.user_id}"

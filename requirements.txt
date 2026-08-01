@@ -13,6 +13,7 @@ PyJWT
 cryptography
 djangorestframework-simplejwt
 resend
+stripe
 
 
 # Build an extension that reads the console error and translate to simple human readable language

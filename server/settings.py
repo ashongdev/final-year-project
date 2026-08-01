@@ -209,11 +209,32 @@ REST_FRAMEWORK = {
 # ─── Email ──────────────────────────────────────────────────────────────────
 # Recipient verification codes (see app.models.RecipientVerification) are
 # sent via the Resend API (app.views.participant). RESEND_API_KEY must be
-# set for sends to actually go out — with no key, verification requests
+# set for sends to actually go out; with no key, verification requests
 # will fail at send time rather than silently no-op.
 
 RESEND_API_KEY = getenv("RESEND_API_KEY", "")
 DEFAULT_FROM_EMAIL = getenv("DEFAULT_FROM_EMAIL", "no-reply@genc.app")
+
+# ─── Billing (Stripe) ──────────────────────────────────────────────────────────
+# Subscriptions (Pro tier) and one-time credit packs. Price IDs are created
+# once via `manage.py create_stripe_products` and then pasted into the
+# environment; they aren't looked up dynamically to avoid an API round trip
+# on every checkout request.
+
+STRIPE_SECRET_KEY = getenv("STRIPE_SECRET_KEY", "")
+STRIPE_PUBLISHABLE_KEY = getenv("STRIPE_PUBLISHABLE_KEY", "")
+STRIPE_WEBHOOK_SECRET = getenv("STRIPE_WEBHOOK_SECRET", "")
+STRIPE_PRICE_MONTHLY = getenv("STRIPE_PRICE_MONTHLY", "")
+STRIPE_PRICE_ANNUAL = getenv("STRIPE_PRICE_ANNUAL", "")
+STRIPE_PRICE_CREDIT_PACK = getenv("STRIPE_PRICE_CREDIT_PACK", "")
+CREDIT_PACK_SIZE = 500
+FREE_BATCH_RECIPIENT_CAP = 10
+FREE_TEMPLATE_CAP = 2
+FREE_REDOWNLOAD_CAP = 3
+FREE_FIELD_CAP = 1
+
+# Where Checkout/Billing Portal sessions redirect back to after payment.
+FRONTEND_URL = getenv("FRONTEND_URL", "http://localhost:8080")
 
 # ─── Security Headers ─────────────────────────────────────────────────────────
 

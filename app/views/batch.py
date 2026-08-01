@@ -1,26 +1,35 @@
 """
 Batch certificate generation: generate one certificate per recipient and return a ZIP.
 """
+
 import io
 import logging
 import zipfile
 
 import requests
+from django.conf import settings
+from django.db import models
+from django.http import HttpResponse
 from PIL import Image
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.http import HttpResponse
 
-from django.db import models
-
-from ..models import GenerationEvent, Templates
+from ..billing import (
+    batch_recipient_cap,
+    get_or_create_subscription,
+    user_has_pro_access,
+)
+from ..models import GenerationEvent, Subscription, Templates
 from ..throttles import GenerateThrottle
-from ..util import parse_json_field, process_image, MAX_TEXT_LENGTH
-from ..views import CLOUDINARY_CLOUD_NAME, _validate_image_file
+from ..util import MAX_TEXT_LENGTH, parse_json_field, process_image
+from ..views import CLOUDINARY_CLOUD_NAME, _check_field_count_gate, _validate_image_file
 
 logger = logging.getLogger("app")
 
+# Hard technical ceiling regardless of plan; batch_recipient_cap() in
+# app.billing decides the actual per-request limit (free cap + credits, or
+# this ceiling for Pro).
 MAX_RECIPIENTS = 500
 
 
@@ -45,17 +54,45 @@ def generate_batch(request):
     recipients = parse_json_field(data.get("recipients"), [])
 
     if not isinstance(fields, list) or not fields:
-        return Response({"error": "fields is required and must be a non-empty array."}, status=400)
+        return Response(
+            {"error": "fields is required and must be a non-empty array."}, status=400
+        )
     if not isinstance(recipients, list) or not recipients:
-        return Response({"error": "recipients is required and must be a non-empty array."}, status=400)
+        return Response(
+            {"error": "recipients is required and must be a non-empty array."},
+            status=400,
+        )
     if len(recipients) > MAX_RECIPIENTS:
-        return Response({"error": f"Maximum {MAX_RECIPIENTS} recipients per batch."}, status=400)
+        return Response(
+            {"error": f"Maximum {MAX_RECIPIENTS} recipients per batch."}, status=400
+        )
+
+    field_gate_err = _check_field_count_gate(fields, in_editor, public_id, request.user)
+    if field_gate_err:
+        return field_gate_err
+
+    is_pro = user_has_pro_access(request.user)
+    cap = batch_recipient_cap(request.user)
+    if len(recipients) > cap:
+        return Response(
+            {
+                "error": (
+                    f"Free accounts (plus any credits) are limited to {cap} "
+                    "recipients per batch. Upgrade to Pro for unlimited batches, "
+                    "or buy a credit pack for a one-time boost."
+                ),
+                "upgrade_required": True,
+            },
+            status=402,
+        )
 
     # Load the base image once
     if in_editor:
         template_file = request.FILES.get("template")
         if not template_file:
-            return Response({"error": "Template file is required in editor mode."}, status=400)
+            return Response(
+                {"error": "Template file is required in editor mode."}, status=400
+            )
         err = _validate_image_file(template_file)
         if err:
             return Response({"error": err}, status=400)
@@ -73,7 +110,9 @@ def generate_batch(request):
             base_image = Image.open(io.BytesIO(resp.content)).convert("RGBA")
         except Exception as exc:
             logger.warning("Batch: failed to fetch template %s: %s", public_id, exc)
-            return Response({"error": "Failed to fetch certificate template."}, status=502)
+            return Response(
+                {"error": "Failed to fetch certificate template."}, status=502
+            )
 
     zip_buffer = io.BytesIO()
     errors = []
@@ -91,8 +130,7 @@ def generate_batch(request):
 
             # Substitute first field text with recipient name; other fields remain fixed
             recipient_fields = [
-                {**f, "text": name} if i == 0 else f
-                for i, f in enumerate(fields)
+                {**f, "text": name} if i == 0 else f for i, f in enumerate(fields)
             ]
 
             try:
@@ -107,8 +145,8 @@ def generate_batch(request):
                 errors.append(f"Recipient {idx + 1} ({name}): generation failed.")
 
     if success_count and public_id:
-        # Count whenever we can attribute this batch to a published template
-        # — whether fetched by id (in_editor=False) or generated from the
+        # Count whenever we can attribute this batch to a published template,
+        # whether fetched by id (in_editor=False) or generated from the
         # editor's own re-uploaded file with a known certificateId attached.
         # A never-uploaded draft has no public_id yet and is correctly skipped.
         tpl = Templates.objects.filter(public_id=public_id).first()
@@ -118,6 +156,15 @@ def generate_batch(request):
             )
             GenerationEvent.objects.create(
                 template=tpl, kind=GenerationEvent.Kind.BATCH, count=success_count
+            )
+
+    if success_count and not is_pro:
+        credits_used = max(0, success_count - settings.FREE_BATCH_RECIPIENT_CAP)
+        if credits_used:
+            subscription = get_or_create_subscription(request.user)
+            new_balance = max(0, subscription.credit_balance - credits_used)
+            Subscription.objects.filter(pk=subscription.pk).update(
+                credit_balance=new_balance
             )
 
     zip_buffer.seek(0)
