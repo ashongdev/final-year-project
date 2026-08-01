@@ -1,0 +1,19 @@
+Django>=4.2,<5.0
+djangorestframework
+django-cors-headers
+cloudinary
+requests
+python-dotenv
+Pillow
+gunicorn
+django-allauth
+dj-rest-auth
+psycopg[binary]
+PyJWT
+cryptography
+djangorestframework-simplejwt
+resend
+stripe
+
+
+# Build an extension that reads the console error and translate to simple human readable language
