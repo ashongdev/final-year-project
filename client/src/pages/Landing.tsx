@@ -1,4 +1,5 @@
 import ThemeToggler from "@/components/dashboard/ThemeToggler";
+import GencMark from "@/components/GencMark";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { cn } from "@/lib/utils";
@@ -82,8 +83,9 @@ const Landing = () => {
 				<div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-5 sm:px-8">
 					<Link
 						to="/"
-						className="font-playfair text-2xl font-bold italic tracking-tight text-foreground"
+						className="flex items-center gap-2 font-playfair text-2xl font-bold italic tracking-tight text-foreground"
 					>
+						<GencMark className="h-6 w-6 shrink-0 text-primary" />
 						genC
 					</Link>
 					<div className="flex items-center gap-3">

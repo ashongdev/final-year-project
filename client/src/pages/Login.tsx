@@ -1,4 +1,5 @@
 import AuthButton from "@/components/AuthButton";
+import GencMark from "@/components/GencMark";
 import { Button } from "@/components/ui/button";
 import GitHubSvg from "@/components/ui/GitHubSvg";
 import GoogleSvg from "@/components/ui/GoogleSvg";
@@ -35,8 +36,9 @@ const Login = () => {
 			<div className="relative hidden w-[42%] shrink-0 flex-col justify-between bg-foreground p-10 text-background lg:flex">
 				<Link
 					to="/"
-					className="font-playfair text-3xl font-bold italic tracking-tight"
+					className="flex items-center gap-2 font-playfair text-3xl font-bold italic tracking-tight"
 				>
+					<GencMark className="h-7 w-7 shrink-0 text-primary" />
 					genC
 				</Link>
 				<div>

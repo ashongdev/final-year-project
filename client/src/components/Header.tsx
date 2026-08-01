@@ -1,3 +1,4 @@
+import GencMark from "@/components/GencMark";
 import TourButton from "@/components/TourButton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -213,7 +214,8 @@ const Header = ({ onTourClick }: HeaderProps) => {
 					>
 						{/* Nameplate */}
 						<div className="mx-auto flex max-w-[1400px] flex-col gap-3 px-5 pb-4 pt-1 sm:flex-row sm:items-end sm:justify-between sm:px-8">
-							<Link to="/" className="group flex items-baseline gap-3">
+							<Link to="/" className="group flex items-center gap-3">
+								<GencMark className="h-10 w-10 shrink-0 text-primary sm:h-12 sm:w-12" />
 								<h1 className="font-playfair text-5xl font-bold italic tracking-tight text-foreground transition-colors group-hover:text-primary sm:text-6xl">
 									genC
 								</h1>
