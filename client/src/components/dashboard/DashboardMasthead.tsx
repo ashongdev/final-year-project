@@ -54,9 +54,9 @@ const DashboardMasthead = () => {
 			.join("")
 			.toUpperCase() || "?";
 
-	const handleLogout = () => {
+	const handleLogout = async () => {
 		localStorage.removeItem("auth_token");
-		logout();
+		await logout();
 		navigate("/login");
 	};
 

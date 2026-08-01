@@ -65,9 +65,9 @@ const Header = ({ onTourClick }: HeaderProps) => {
 
 	const location = useLocation();
 
-	const handleLogout = () => {
+	const handleLogout = async () => {
 		localStorage.removeItem("auth_token");
-		logout();
+		await logout();
 		navigate("/login");
 	};
 

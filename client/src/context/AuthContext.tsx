@@ -24,7 +24,7 @@ interface AuthContextValue {
 	isPro: boolean;
 	loading: boolean;
 	refreshAuth: () => Promise<void>;
-	logout: () => void;
+	logout: () => Promise<void>;
 	BASE_URL: string;
 }
 
@@ -72,10 +72,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 		void refreshAuth();
 	}, [refreshAuth]);
 
-	const logout = useCallback(() => {
+	const logout = useCallback(async () => {
+		try {
+			// Clears the Django session server-side and expires the
+			// sessionid cookie — without this, the cookie stays valid and
+			// the next /me/ call just logs the user back in.
+			await api.post(`${BASE_URL}/auth/logout/`);
+		} catch {
+			// Best-effort: still clear local state even if the request
+			// fails, so the UI doesn't get stuck looking logged in.
+		}
 		setUser(null);
 		setIsPro(false);
-	}, []);
+	}, [BASE_URL]);
 
 	const isAuthenticated = user !== null;
 	const userName =

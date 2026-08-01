@@ -10,6 +10,12 @@ const GoogleCallback = () => {
 		const params = new URLSearchParams(window.location.search);
 		const code = params.get("code");
 
+		// Guarantees the csrftoken cookie exists before the POST below reads
+		// it — this page can load fresh (e.g. Google's redirect back is a
+		// full navigation), racing against AuthProvider's own priming call,
+		// so this component can't rely on that one having already landed.
+		await api.get(`${BASE_URL}/csrf/`);
+
 		const response = await api.post(
 			`${BASE_URL}/auth/google/`,
 			{ code },
