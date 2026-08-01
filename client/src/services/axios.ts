@@ -18,15 +18,21 @@ function getCookie(name) {
 }
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
-const csrftoken = getCookie("csrftoken");
 
 const api = axios.create({
 	baseURL: BASE_URL,
 	withCredentials: true,
-	headers: {
-		// "Content-Type": "application/json",
-		"X-CSRFToken": csrftoken,
-	},
+});
+
+// Read the CSRF cookie fresh on every request, not once at module load —
+// the cookie may not exist yet on first page load (before Django has ever
+// set it), and a value captured then would stay stale for the whole session.
+api.interceptors.request.use((config) => {
+	const csrftoken = getCookie("csrftoken");
+	if (csrftoken) {
+		config.headers["X-CSRFToken"] = csrftoken;
+	}
+	return config;
 });
 
 // Response interceptor for token refresh
