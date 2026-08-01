@@ -103,9 +103,11 @@ def generate_batch(request):
                 logger.warning("Batch: failed to generate for %s: %s", name, exc)
                 errors.append(f"Recipient {idx + 1} ({name}): generation failed.")
 
-    if not in_editor and success_count:
-        # Only count against a published template — editor-only batch tests
-        # (raw file upload, no certificateId) aren't real issuances.
+    if success_count and public_id:
+        # Count whenever we can attribute this batch to a published template
+        # — whether fetched by id (in_editor=False) or generated from the
+        # editor's own re-uploaded file with a known certificateId attached.
+        # A never-uploaded draft has no public_id yet and is correctly skipped.
         tpl = Templates.objects.filter(public_id=public_id).first()
         if tpl:
             Templates.objects.filter(pk=tpl.pk).update(

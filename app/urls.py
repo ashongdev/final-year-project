@@ -11,6 +11,7 @@ from .views.dashboard import (
     delete_collection,
     list_collections,
     list_templates,
+    log_activity,
     rename_collection,
     rename_template,
     set_template_state,
@@ -55,6 +56,7 @@ urlpatterns = [
     # Templates
     path("dashboard/stats/", dashboard_stats, name="dashboard_stats"),
     path("dashboard/analytics/", analytics, name="analytics"),
+    path("activity/log/", log_activity, name="log_activity"),
     path("templates/", list_templates, name="list_templates"),
     path("templates/rename/", rename_template, name="rename_template"),
     path("templates/state/", set_template_state, name="set_template_state"),

@@ -154,6 +154,7 @@ class GenerationEvent(models.Model):
     """
 
     class Kind(models.TextChoices):
+        EDITOR = "editor", "Editor"
         SELF_SERVE = "self_serve", "Self-Serve"
         BATCH = "batch", "Batch"
 
@@ -176,6 +177,40 @@ class GenerationEvent(models.Model):
 
     def __str__(self):
         return f"{self.kind} x{self.count} on template {self.template_id}"
+
+
+class UserActivityEvent(models.Model):
+    """
+    Lightweight log of user actions that aren't certificate generations but
+    are still worth tracking for the analytics dashboard — e.g. sharing a
+    link, or loading an existing template by id. Kept separate from
+    GenerationEvent since these aren't always attributable to a template
+    the user owns (Load by ID can load any public template).
+    """
+
+    class Kind(models.TextChoices):
+        LINK_SHARED = "link_shared", "Link Shared"
+        TEMPLATE_LOADED = "template_loaded", "Template Loaded"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        db_index=True,
+        related_name="activity_events",
+    )
+    kind = models.CharField(max_length=30, choices=Kind.choices, db_index=True)
+    # Optional free-form context, e.g. the public_id involved.
+    label = models.CharField(max_length=255, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "kind", "created_at"], name="useract_user_kind_created_idx"),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.kind} by user {self.user_id}"
 
 
 def _generate_verification_code() -> str:

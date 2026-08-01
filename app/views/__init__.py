@@ -271,6 +271,11 @@ def generate(request):
     data = request.data
     public_id = data.get("certificateId", "").strip()
     in_editor = data.get("inEditor") == "true"
+    # "preview" (the editor's Preview button) reuses this same endpoint but
+    # shouldn't count as a real issuance. Anything else — including the
+    # editor's own Download button and the public participant link, which
+    # doesn't send this field at all — defaults to counting.
+    purpose = data.get("purpose", "download")
 
     fields = parse_json_field(data.get("fields"), [])
 
@@ -331,17 +336,26 @@ def generate(request):
         logger.exception("Image processing failed: %s", exc)
         return Response({"error": "Certificate generation failed."}, status=500)
 
-    if not in_editor:
-        # Only count generations against a published template — editor-only
-        # test downloads (in_editor=True, raw file upload) aren't real issuances.
+    if purpose != "preview" and public_id:
+        # Count against a published template whenever we can attribute this
+        # generation to one — the public participant link (always has a
+        # public_id, never a "preview"), and the editor's own Download
+        # button once a template has been uploaded/published. A brand-new,
+        # never-uploaded draft has no public_id yet, so there's nothing to
+        # attribute it to and it's correctly skipped. in_editor distinguishes
+        # the organizer downloading their own copy from an actual recipient
+        # using the public self-serve link.
         tpl = Templates.objects.filter(public_id=public_id).first()
         if tpl:
             Templates.objects.filter(pk=tpl.pk).update(
                 generation_count=models.F("generation_count") + 1
             )
-            GenerationEvent.objects.create(
-                template=tpl, kind=GenerationEvent.Kind.SELF_SERVE, count=1
+            kind = (
+                GenerationEvent.Kind.EDITOR
+                if in_editor
+                else GenerationEvent.Kind.SELF_SERVE
             )
+            GenerationEvent.objects.create(template=tpl, kind=kind, count=1)
 
     image_data = buffer.getvalue()
     buffer.close()
