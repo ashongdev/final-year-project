@@ -8,13 +8,13 @@ import {
 import DateFieldControl from "@/components/field-controls/DateFieldControl";
 import SignatureFieldControl from "@/components/field-controls/SignatureFieldControl";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
 	Sheet,
 	SheetContent,
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
+import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useSignatureFieldActions } from "@/hooks/useSignatureFieldActions";
 import { DEFAULT_SIGNATURE_HEIGHT, DEFAULT_SIGNATURE_WIDTH } from "@/lib/fieldPresets";
@@ -128,36 +128,52 @@ const MobileFieldMenu = ({
 				return <FontWeightControl field={field} onFieldUpdate={boundUpdate} />;
 			case "size":
 				return isSignature ? (
-					<div className="grid grid-cols-2 gap-3">
-						<div className="space-y-2">
-							<label className="text-xs text-muted-foreground">Width</label>
-							<Input
-								type="number"
-								value={field.width ?? DEFAULT_SIGNATURE_WIDTH}
-								onChange={(e) =>
-									boundUpdate({ width: Number(e.target.value) })
+					<div className="space-y-5">
+						<div className="space-y-3">
+							<div className="flex items-center justify-between">
+								<label className="text-xs text-muted-foreground">
+									Width
+								</label>
+								<span className="text-xs font-medium text-foreground">
+									{field.width ?? DEFAULT_SIGNATURE_WIDTH}
+								</span>
+							</div>
+							<Slider
+								value={[field.width ?? DEFAULT_SIGNATURE_WIDTH]}
+								onValueChange={([value]) =>
+									boundUpdate({ width: value })
 								}
 								min={20}
 								max={1000}
-								className="h-9"
+								step={1}
 							/>
 						</div>
-						<div className="space-y-2">
-							<label className="text-xs text-muted-foreground">Height</label>
-							<Input
-								type="number"
-								value={field.height ?? DEFAULT_SIGNATURE_HEIGHT}
-								onChange={(e) =>
-									boundUpdate({ height: Number(e.target.value) })
+						<div className="space-y-3">
+							<div className="flex items-center justify-between">
+								<label className="text-xs text-muted-foreground">
+									Height
+								</label>
+								<span className="text-xs font-medium text-foreground">
+									{field.height ?? DEFAULT_SIGNATURE_HEIGHT}
+								</span>
+							</div>
+							<Slider
+								value={[field.height ?? DEFAULT_SIGNATURE_HEIGHT]}
+								onValueChange={([value]) =>
+									boundUpdate({ height: value })
 								}
 								min={20}
 								max={1000}
-								className="h-9"
+								step={1}
 							/>
 						</div>
 					</div>
 				) : (
-					<FontSizeControl field={field} onFieldUpdate={boundUpdate} />
+					<FontSizeControl
+						field={field}
+						onFieldUpdate={boundUpdate}
+						variant="slider"
+					/>
 				);
 			case "color":
 				return (

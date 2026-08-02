@@ -6,6 +6,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { PREDEFINED_COLORS } from "@/lib/fieldPresets";
 import { CERTIFICATE_FONTS, FONT_WEIGHTS } from "@/lib/utils";
@@ -37,19 +38,40 @@ export const FontFamilyControl = ({ field, onFieldUpdate }: FieldControlProps) =
 	</div>
 );
 
-export const FontSizeControl = ({ field, onFieldUpdate }: FieldControlProps) => (
-	<div className="space-y-2">
-		<label className="text-xs text-muted-foreground">Size (px)</label>
-		<Input
-			type="number"
-			value={field.fontSize}
-			onChange={(e) => onFieldUpdate({ fontSize: Number(e.target.value) })}
-			min={8}
-			max={300}
-			className="h-8"
-		/>
-	</div>
-);
+export const FontSizeControl = ({
+	field,
+	onFieldUpdate,
+	variant = "input",
+}: FieldControlProps & { variant?: "input" | "slider" }) =>
+	variant === "slider" ? (
+		<div className="space-y-3">
+			<div className="flex items-center justify-between">
+				<label className="text-xs text-muted-foreground">Size (px)</label>
+				<span className="text-xs font-medium text-foreground">
+					{field.fontSize}
+				</span>
+			</div>
+			<Slider
+				value={[field.fontSize]}
+				onValueChange={([value]) => onFieldUpdate({ fontSize: value })}
+				min={8}
+				max={300}
+				step={1}
+			/>
+		</div>
+	) : (
+		<div className="space-y-2">
+			<label className="text-xs text-muted-foreground">Size (px)</label>
+			<Input
+				type="number"
+				value={field.fontSize}
+				onChange={(e) => onFieldUpdate({ fontSize: Number(e.target.value) })}
+				min={8}
+				max={300}
+				className="h-8"
+			/>
+		</div>
+	);
 
 export const FontWeightControl = ({ field, onFieldUpdate }: FieldControlProps) => (
 	<div className="space-y-2">

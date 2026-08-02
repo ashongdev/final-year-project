@@ -93,34 +93,17 @@ const CertificatePreview = ({
 	// same pointerdown, so a field is only treated as "tapped" (as opposed
 	// to dragged) if the pointer never moved past a small threshold before
 	// lifting.
+	//
+	// Editing uses a real <input>, not contentEditable — contentEditable's
+	// text-editing behavior (especially backspace/delete) is notoriously
+	// unreliable across browsers, particularly iOS WebKit (which every iOS
+	// browser uses regardless of vendor). A native input has none of that,
+	// since it's backed by the platform's own text field widget.
 	const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
+	const [editingText, setEditingText] = useState("");
 	const dragStartPos = useRef<{ x: number; y: number } | null>(null);
 	const hasMovedRef = useRef(false);
 	const wasAlreadySelectedRef = useRef(false);
-
-	// Only the ref is read on entering edit mode (see effect below) — kept
-	// out of that effect's deps so it doesn't re-run (and re-place the
-	// caret) on every keystroke while the field's text is being committed
-	// back into `fields` on each input.
-	const fieldsRef = useRef(fields);
-	fieldsRef.current = fields;
-
-	useEffect(() => {
-		if (!editingFieldId) return;
-		const el = previewRef.current?.querySelector<HTMLElement>(
-			`[data-field-id="${editingFieldId}"]`,
-		);
-		if (!el) return;
-		const field = fieldsRef.current.find((f) => f.id === editingFieldId);
-		if (field) el.textContent = field.text;
-		el.focus();
-		const range = document.createRange();
-		range.selectNodeContents(el);
-		range.collapse(false);
-		const selection = window.getSelection();
-		selection?.removeAllRanges();
-		selection?.addRange(range);
-	}, [editingFieldId, previewRef]);
 
 	// Calculate actual image dimensions and scale
 	useEffect(() => {
@@ -234,6 +217,7 @@ const CertificatePreview = ({
 		} else if (field.preset === "signatory") {
 			onOpenFieldMenu?.(fieldId, "signature");
 		} else {
+			setEditingText(field.text);
 			setEditingFieldId(fieldId);
 		}
 	};
@@ -373,25 +357,6 @@ const CertificatePreview = ({
 										}
 										if (!isParticipant) onFieldSelect(field.id);
 									}}
-									contentEditable={isEditing}
-									suppressContentEditableWarning
-									data-field-id={field.id}
-									onInput={(e) => {
-										if (!isEditing) return;
-										onFieldResize?.(field.id, {
-											text: e.currentTarget.textContent ?? "",
-										});
-									}}
-									onBlur={() => {
-										if (isEditing) setEditingFieldId(null);
-									}}
-									onKeyDown={(e) => {
-										if (!isEditing) return;
-										if (e.key === "Enter" || e.key === "Escape") {
-											e.preventDefault();
-											e.currentTarget.blur();
-										}
-									}}
 									className="absolute select-none"
 									style={{
 										left: `${field.x * imageScale.scale + imageScale.offsetX}px`,
@@ -446,8 +411,47 @@ const CertificatePreview = ({
 											draggable={false}
 											className="h-full w-full object-contain"
 										/>
+									) : isEditing ? (
+										// A real <input>, not contentEditable — a plain
+										// text field has rock-solid native backspace/
+										// selection/IME behavior on every platform
+										// (backed by the OS's own text widget), unlike
+										// contentEditable, which is a JS/DOM
+										// reimplementation of text editing that's
+										// historically unreliable, especially on iOS
+										// WebKit. size grows the box with the value so
+										// it keeps roughly matching the static text's
+										// footprint while editing.
+										<input
+											ref={(el) => {
+												if (!el) return;
+												el.focus();
+												el.setSelectionRange(
+													el.value.length,
+													el.value.length,
+												);
+											}}
+											type="text"
+											value={editingText}
+											onChange={(e) => setEditingText(e.target.value)}
+											onBlur={(e) => {
+												onFieldResize?.(field.id, {
+													text: e.currentTarget.value,
+												});
+												setEditingFieldId(null);
+											}}
+											onKeyDown={(e) => {
+												if (e.key === "Enter" || e.key === "Escape") {
+													e.preventDefault();
+													e.currentTarget.blur();
+												}
+											}}
+											size={Math.max(editingText.length, 1)}
+											className="border-none bg-transparent p-0 outline-none"
+											style={{ font: "inherit", color: "inherit" }}
+										/>
 									) : (
-										!isEditing && field.text
+										field.text
 									)}
 
 									{isSelected && isResizable && !isMobile && (
