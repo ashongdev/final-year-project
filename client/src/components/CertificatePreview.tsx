@@ -1,8 +1,77 @@
+import { shapeText, type ShapedText } from "@/lib/textShaping";
 import { cn } from "@/lib/utils";
 import { TextField } from "@/types/TextField";
 import { motion } from "framer-motion";
 import { MoreVertical } from "lucide-react";
 import { RefObject, useEffect, useRef, useState } from "react";
+
+/**
+ * Renders field text from HarfBuzz-shaped glyph outlines (see
+ * lib/textShaping.ts) instead of a plain DOM text node — the browser's own
+ * text-layout algorithm doesn't reliably agree with Pillow/FreeType's (see
+ * server/app/util.py's anchor="mm"), which is what made the live canvas
+ * drift from the real output. HarfBuzz glyph coordinates are y-up (font/
+ * OpenType convention); the outer <g> flips that to SVG's y-down via a
+ * negative y-scale, combined with the same ascent/descent baseline formula
+ * verified against Pillow.
+ */
+const FieldText = ({
+	text,
+	font,
+	fontSize,
+	color,
+}: {
+	text: string;
+	font: string;
+	fontSize: number;
+	color: string;
+}) => {
+	const [shaped, setShaped] = useState<ShapedText | null>(null);
+
+	useEffect(() => {
+		if (!text) {
+			setShaped(null);
+			return;
+		}
+		let cancelled = false;
+		shapeText(font, text).then((result) => {
+			if (!cancelled) setShaped(result);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [text, font]);
+
+	if (!shaped || fontSize <= 0) {
+		return (
+			<svg width={1} height={Math.max(fontSize, 0)} style={{ display: "block" }} />
+		);
+	}
+
+	const scale = fontSize / shaped.upem;
+	const baselineY =
+		fontSize / 2 + ((shaped.ascentRatio - shaped.descentRatio) / 2) * fontSize;
+	const width = shaped.totalAdvance * scale;
+
+	return (
+		<svg
+			width={width}
+			height={fontSize}
+			style={{ display: "block", overflow: "visible" }}
+		>
+			<g
+				fill={color}
+				transform={`translate(0, ${baselineY}) scale(${scale}, ${-scale})`}
+			>
+				{shaped.glyphs.map((glyph, i) => (
+					<g key={i} transform={`translate(${glyph.x}, ${glyph.y})`}>
+						<path d={glyph.pathData} />
+					</g>
+				))}
+			</g>
+		</svg>
+	);
+};
 
 interface CertificatePreviewProps {
 	templateUrl: string | null;
@@ -116,6 +185,10 @@ const CertificatePreview = ({
 	const dragStartPos = useRef<{ x: number; y: number } | null>(null);
 	const hasMovedRef = useRef(false);
 	const wasAlreadySelectedRef = useRef(false);
+	// Drives the baked-overlay grace period below — real React state (not
+	// just the hasMovedRef/draggingId refs) because it needs to trigger a
+	// re-render when a drag starts/stops.
+	const [isDragging, setIsDragging] = useState(false);
 
 	// Show the real backend render instead of each field's approximate live
 	// content only when it's confirmed current AND nothing is being actively
@@ -123,7 +196,40 @@ const CertificatePreview = ({
 	// invalidate liveRenderFresh) until it's committed on blur, so it needs
 	// its own check here to avoid the stale baked text showing behind the
 	// live input.
-	const showBakedOverlay = liveRenderFresh && !!liveRenderUrl && editingFieldId === null;
+	const bakedOverlayWanted =
+		liveRenderFresh && !!liveRenderUrl && editingFieldId === null;
+
+	// The approximate live view and the real render don't land in exactly
+	// the same spot (different rendering engines measuring text slightly
+	// differently), so swapping the instant any edit happens — even a
+	// single arrow-key nudge — reads as a jarring jump. Keeping the
+	// accurate view up for a brief grace window instead lets a quick nudge
+	// settle rather than jolt.
+	//
+	// That grace window is wrong for an active drag, though: video evidence
+	// showed it letting the stale accurate render keep fading out for up to
+	// ~750ms (grace + fade) while the field had already moved somewhere
+	// else entirely under the cursor, producing two visibly different
+	// positions on screen at once. During a real drag this hides
+	// immediately instead — no grace, no fade — since a moving field has no
+	// "settled" position to defer to yet.
+	const BAKED_OVERLAY_GRACE_MS = 250;
+	const [showBakedOverlay, setShowBakedOverlay] = useState(false);
+	useEffect(() => {
+		if (bakedOverlayWanted) {
+			setShowBakedOverlay(true);
+			return;
+		}
+		if (isDragging) {
+			setShowBakedOverlay(false);
+			return;
+		}
+		const timer = setTimeout(
+			() => setShowBakedOverlay(false),
+			BAKED_OVERLAY_GRACE_MS,
+		);
+		return () => clearTimeout(timer);
+	}, [bakedOverlayWanted, isDragging]);
 
 	// Calculate actual image dimensions and scale
 	useEffect(() => {
@@ -212,6 +318,7 @@ const CertificatePreview = ({
 			const dy = e.clientY - dragStartPos.current.y;
 			if (Math.hypot(dx, dy) > TAP_DRAG_THRESHOLD_PX) {
 				hasMovedRef.current = true;
+				setIsDragging(true);
 			}
 		}
 		if (hasMovedRef.current) {
@@ -224,6 +331,7 @@ const CertificatePreview = ({
 		const fieldId = draggingId.current;
 		const wasTap = !hasMovedRef.current;
 		draggingId.current = null;
+		setIsDragging(false);
 		e.currentTarget.releasePointerCapture(e.pointerId);
 
 		if (!isMobile || !wasTap) return;
@@ -264,6 +372,7 @@ const CertificatePreview = ({
 			startHeight: field.height ?? 100,
 			isImage: !!field.imageUrl,
 		};
+		setIsDragging(true);
 		e.currentTarget.setPointerCapture(e.pointerId);
 	};
 
@@ -304,6 +413,7 @@ const CertificatePreview = ({
 
 	const handleResizePointerUp = (e: React.PointerEvent<HTMLSpanElement>) => {
 		resizeState.current = null;
+		setIsDragging(false);
 		e.currentTarget.releasePointerCapture(e.pointerId);
 	};
 
@@ -345,8 +455,13 @@ const CertificatePreview = ({
 							src={liveRenderUrl}
 							alt=""
 							draggable={false}
-							className="absolute inset-0 h-full w-full object-contain pointer-events-none transition-opacity duration-200"
-							style={{ opacity: showBakedOverlay ? 1 : 0 }}
+							className="absolute inset-0 h-full w-full object-contain pointer-events-none transition-opacity duration-500"
+							style={{
+								opacity: showBakedOverlay ? 1 : 0,
+								// Skip the fade when a drag forces this hidden — see
+								// the isDragging branch above for why.
+								transitionDuration: isDragging ? "0ms" : undefined,
+							}}
 						/>
 					)}
 
@@ -416,8 +531,6 @@ const CertificatePreview = ({
 										display: "inline-flex",
 										alignItems: "center",
 										lineHeight: "1",
-										padding: isSelected ? "6px 10px" : "0",
-										margin: isSelected ? "-6px -10px" : "0",
 										cursor: isEditing
 											? "text"
 											: isDraggable
@@ -439,55 +552,93 @@ const CertificatePreview = ({
 												: "auto",
 									}}
 								>
-									{showBakedOverlay ? null : isImageField ? (
-										<img
-											src={field.imageUrl}
-											alt=""
-											draggable={false}
-											className="h-full w-full object-contain"
+									{isSelected && (
+										// A bigger grab target for an already-selected field,
+										// without touching this span's own box: padding here
+										// would grow the border-box that the -50% transform
+										// above centers against, silently shifting the
+										// anchored (field.x, field.y) point by half the
+										// padding whenever selection toggles — a real,
+										// font-metrics-unrelated source of drift that padding
+										// + a compensating negative margin does NOT actually
+										// cancel out (the margin offsets the box's static
+										// position, not the separate, larger shift the bigger
+										// border-box causes the percentage transform to
+										// produce). An absolutely-positioned sibling is inert
+										// for layout/sizing purposes, so it can't perturb the
+										// transform basis at all.
+										<span
+											aria-hidden="true"
+											style={{ position: "absolute", inset: "-6px -10px" }}
 										/>
-									) : isEditing ? (
-										// A real <input>, not contentEditable — a plain
-										// text field has rock-solid native backspace/
-										// selection/IME behavior on every platform
-										// (backed by the OS's own text widget), unlike
-										// contentEditable, which is a JS/DOM
-										// reimplementation of text editing that's
-										// historically unreliable, especially on iOS
-										// WebKit. size grows the box with the value so
-										// it keeps roughly matching the static text's
-										// footprint while editing.
-										<input
-											ref={(el) => {
-												if (!el) return;
-												el.focus();
-												el.setSelectionRange(
-													el.value.length,
-													el.value.length,
-												);
-											}}
-											type="text"
-											value={editingText}
-											onChange={(e) => setEditingText(e.target.value)}
-											onBlur={(e) => {
-												onFieldResize?.(field.id, {
-													text: e.currentTarget.value,
-												});
-												setEditingFieldId(null);
-											}}
-											onKeyDown={(e) => {
-												if (e.key === "Enter" || e.key === "Escape") {
-													e.preventDefault();
-													e.currentTarget.blur();
-												}
-											}}
-											size={Math.max(editingText.length, 1)}
-											className="border-none bg-transparent p-0 outline-none"
-											style={{ font: "inherit", color: "inherit" }}
-										/>
-									) : (
-										field.text
 									)}
+									{/* Content stays mounted (opacity, not removed) even
+									when the baked overlay is showing through — removing
+									it entirely would collapse this span to zero size
+									(nothing left to size an auto-width flex item by),
+									dragging the outline and resize handles in with it. */}
+									<span
+										className="transition-opacity duration-500"
+										style={{
+											opacity: showBakedOverlay ? 0 : 1,
+											transitionDuration: isDragging ? "0ms" : undefined,
+										}}
+									>
+										{isImageField ? (
+											<img
+												src={field.imageUrl}
+												alt=""
+												draggable={false}
+												className="h-full w-full object-contain"
+											/>
+										) : isEditing ? (
+											// A real <input>, not contentEditable — a plain
+											// text field has rock-solid native backspace/
+											// selection/IME behavior on every platform
+											// (backed by the OS's own text widget), unlike
+											// contentEditable, which is a JS/DOM
+											// reimplementation of text editing that's
+											// historically unreliable, especially on iOS
+											// WebKit. size grows the box with the value so
+											// it keeps roughly matching the static text's
+											// footprint while editing.
+											<input
+												ref={(el) => {
+													if (!el) return;
+													el.focus();
+													el.setSelectionRange(
+														el.value.length,
+														el.value.length,
+													);
+												}}
+												type="text"
+												value={editingText}
+												onChange={(e) => setEditingText(e.target.value)}
+												onBlur={(e) => {
+													onFieldResize?.(field.id, {
+														text: e.currentTarget.value,
+													});
+													setEditingFieldId(null);
+												}}
+												onKeyDown={(e) => {
+													if (e.key === "Enter" || e.key === "Escape") {
+														e.preventDefault();
+														e.currentTarget.blur();
+													}
+												}}
+												size={Math.max(editingText.length, 1)}
+												className="border-none bg-transparent p-0 outline-none"
+												style={{ font: "inherit", color: "inherit" }}
+											/>
+										) : (
+											<FieldText
+												text={field.text}
+												font={field.font}
+												fontSize={field.fontSize * imageScale.scale}
+												color={field.color}
+											/>
+										)}
+									</span>
 
 									{isSelected && isResizable && !isMobile && (
 										<>
