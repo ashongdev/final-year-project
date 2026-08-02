@@ -11,7 +11,6 @@ import {
 import api from "@/services/axios";
 import { logActivity } from "@/services/dashboardApi";
 import type { Recipient, TextField } from "@/types/TextField";
-import axios from "axios";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuthContext } from "./useAuthContext";
@@ -88,42 +87,61 @@ const useTemplateManager = ({
 	/**
 	 * Renders the certificate exactly as the server would (same /generate/
 	 * pipeline used for real downloads), returning the resulting image blob.
-	 * Shared by both "Generate" (download) and "Preview" (view only).
+	 * Shared by "Generate" (download), "Preview" (view only), and "live"
+	 * (the editor's background auto-refresh — see GenerateThrottle on the
+	 * backend for why that purpose gets its own, much higher rate limit).
+	 * "live" calls fail silently (no toasts) since they're a background
+	 * nicety the user never explicitly asked for, not a user action.
+	 *
+	 * "live" also skips re-uploading the template file when it's already
+	 * been silently saved to Cloudinary (uploadedPublicId set — see
+	 * handleTemplateUpload), sending just the certificateId instead so the
+	 * backend fetches its own copy. Without that, every debounce tick during
+	 * active editing would re-upload the full template image for no reason,
+	 * since only field positions actually changed. The backend verifies the
+	 * caller owns that id (server/app/views/__init__.py's generate()), which
+	 * is why this now goes through `api` (cookies + CSRF) rather than a bare
+	 * axios call.
 	 */
 	const generateCertificateBlob = async (
-		purpose: "download" | "preview" = "download",
+		purpose: "download" | "preview" | "live" = "download",
 	): Promise<Blob | null> => {
-		if (!hasTemplateSource(templateFile, templateUrl)) {
-			toast.error("Please upload a template first");
-			return null;
-		}
+		const silent = purpose === "live";
+		const canFetchByIdInstead = purpose === "live" && !!uploadedPublicId;
 
-		const resolvedFile = await resolveTemplateFile(templateFile, templateUrl);
-		if (!resolvedFile) {
-			toast.error("Failed to load the selected template");
+		if (!canFetchByIdInstead && !hasTemplateSource(templateFile, templateUrl)) {
+			if (!silent) toast.error("Please upload a template first");
 			return null;
 		}
 
 		const formData = new FormData();
-		formData.append("template", resolvedFile);
+		if (!canFetchByIdInstead) {
+			const resolvedFile = await resolveTemplateFile(templateFile, templateUrl);
+			if (!resolvedFile) {
+				if (!silent) toast.error("Failed to load the selected template");
+				return null;
+			}
+			formData.append("template", resolvedFile);
+		}
 		formData.append("fields", JSON.stringify(getVisibleFields(fields)));
 		formData.append("inEditor", "true");
 		formData.append("purpose", purpose);
 		// Lets the backend attribute this generation to the right template
-		// for analytics, even though the image itself is re-uploaded rather
-		// than fetched by id.
+		// for analytics (and, for "live", is what it fetches the image by
+		// when the file itself wasn't sent — see canFetchByIdInstead above).
 		if (uploadedPublicId) {
 			formData.append("certificateId", uploadedPublicId);
 		}
 
 		try {
-			const response = await axios.post(
+			const response = await api.post(
 				`${BASE_URL}/generate/`,
 				formData,
 				{ responseType: "blob" },
 			);
 			return response.data as Blob;
 		} catch (err) {
+			if (silent) return null;
 			const upgradeMessage = await extractUpgradeErrorFromBlob(err);
 			if (upgradeMessage) {
 				toast.error(upgradeMessage, {
@@ -161,6 +179,18 @@ const useTemplateManager = ({
 	 */
 	const handlePreview = async (): Promise<string | null> => {
 		const blob = await generateCertificateBlob("preview");
+		if (!blob) return null;
+		return URL.createObjectURL(blob);
+	};
+
+	/**
+	 * Same idea as handlePreview, but for the editor's background
+	 * auto-refresh: silent on failure, and tagged with purpose="live" so it
+	 * draws from a separate, higher rate-limit budget (see GenerateThrottle)
+	 * instead of competing with real downloads/generates.
+	 */
+	const handleLiveRender = async (): Promise<string | null> => {
+		const blob = await generateCertificateBlob("live");
 		if (!blob) return null;
 		return URL.createObjectURL(blob);
 	};
@@ -417,6 +447,7 @@ const useTemplateManager = ({
 		handleDownload,
 		handleBatchDownload,
 		handlePreview,
+		handleLiveRender,
 		handleTemplateUpload,
 		handleFileSelect,
 		handleShareClick,

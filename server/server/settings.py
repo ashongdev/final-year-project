@@ -200,6 +200,11 @@ REST_FRAMEWORK = {
         "anon": getenv("THROTTLE_RATE_ANON", "60/hour"),
         "user": getenv("THROTTLE_RATE_USER", "300/hour"),
         "generate": getenv("THROTTLE_RATE_GENERATE", "30/hour"),
+        # The editor's background "keep the canvas showing the real render"
+        # auto-refresh — see GenerateThrottle.allow_request. Deliberately
+        # far more permissive than "generate" since it fires on a debounce
+        # while editing, not on explicit user action.
+        "live_preview": getenv("THROTTLE_RATE_LIVE_PREVIEW", "600/hour"),
         "verification": getenv("THROTTLE_RATE_VERIFICATION", "10/hour"),
     },
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],

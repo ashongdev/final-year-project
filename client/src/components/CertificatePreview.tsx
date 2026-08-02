@@ -40,6 +40,16 @@ interface CertificatePreviewProps {
 	 * category list instead).
 	 */
 	onOpenFieldMenu?: (id: string, category?: "date" | "signature") => void;
+	/**
+	 * A recent backend-rendered PNG of the current template+fields (see
+	 * CertificateEditor's debounced handleLiveRender), shown in place of the
+	 * approximate live field overlay whenever it's confirmed to match the
+	 * current state exactly. Optional — omitted entirely outside the
+	 * organizer editor (e.g. the read-only participant view).
+	 */
+	liveRenderUrl?: string | null;
+	/** True only while liveRenderUrl reflects the *current* fields/template — see CertificateEditor. */
+	liveRenderFresh?: boolean;
 }
 
 const TAP_DRAG_THRESHOLD_PX = 6;
@@ -78,6 +88,8 @@ const CertificatePreview = ({
 	showDragHint = false,
 	isMobile = false,
 	onOpenFieldMenu,
+	liveRenderUrl = null,
+	liveRenderFresh = false,
 }: CertificatePreviewProps) => {
 	const [imageScale, setImageScale] = useState({
 		scale: 1,
@@ -104,6 +116,14 @@ const CertificatePreview = ({
 	const dragStartPos = useRef<{ x: number; y: number } | null>(null);
 	const hasMovedRef = useRef(false);
 	const wasAlreadySelectedRef = useRef(false);
+
+	// Show the real backend render instead of each field's approximate live
+	// content only when it's confirmed current AND nothing is being actively
+	// edited — an inline text edit doesn't touch `fields` (hence doesn't
+	// invalidate liveRenderFresh) until it's committed on blur, so it needs
+	// its own check here to avoid the stale baked text showing behind the
+	// live input.
+	const showBakedOverlay = liveRenderFresh && !!liveRenderUrl && editingFieldId === null;
 
 	// Calculate actual image dimensions and scale
 	useEffect(() => {
@@ -315,6 +335,21 @@ const CertificatePreview = ({
 						draggable={false}
 					/>
 
+					{liveRenderUrl && (
+						// The actual backend-rendered certificate, crossfaded in
+						// whenever it's confirmed to match the current fields
+						// exactly (showBakedOverlay) — kept mounted at opacity 0
+						// otherwise so the fade is smooth and it's ready the
+						// instant editing goes idle again, rather than popping in.
+						<img
+							src={liveRenderUrl}
+							alt=""
+							draggable={false}
+							className="absolute inset-0 h-full w-full object-contain pointer-events-none transition-opacity duration-200"
+							style={{ opacity: showBakedOverlay ? 1 : 0 }}
+						/>
+					)}
+
 					{showPreview &&
 						fields &&
 						fields?.length &&
@@ -404,7 +439,7 @@ const CertificatePreview = ({
 												: "auto",
 									}}
 								>
-									{isImageField ? (
+									{showBakedOverlay ? null : isImageField ? (
 										<img
 											src={field.imageUrl}
 											alt=""

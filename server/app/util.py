@@ -118,20 +118,13 @@ def process_image(image, fields: list, signature_cache: dict | None = None) -> B
 
         font = _load_font(font_name, font_size)
 
-        bbox = draw.textbbox((0, 0), text, font=font)
-        text_left, text_top, text_right, text_bottom = bbox
-        text_w = text_right - text_left
-        text_h = text_bottom - text_top
-
-        # Y: absolute center of text block
-        y_draw = y_axis - text_h / 2 - text_top
-
-        if anchor_mode == "center":
-            x_draw = x_axis - text_w / 2 - text_left
-        else:
-            x_draw = x_axis - text_left
-
-        draw.text((x_draw, y_draw), text, font=font, fill=color)
+        # Anchor on advance width (horizontal) and ascent/descent metrics
+        # (vertical) rather than the glyphs' tight ink bbox — this matches
+        # how the editor preview lays text out in CSS (line-height-based
+        # centering), whereas bbox-based centering drifts for script fonts
+        # whose ink sits well inside the font's own metrics envelope.
+        anchor = "mm" if anchor_mode == "center" else "lm"
+        draw.text((x_axis, y_axis), text, font=font, fill=color, anchor=anchor)
 
     buffer = BytesIO()
     image.save(buffer, format="PNG")

@@ -114,6 +114,13 @@ const CertificateEditor = ({
 	const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(
 		null,
 	);
+	// The editor canvas's background "show the real render while idle"
+	// layer — see handleLiveRender/GenerateThrottle. Fresh only while
+	// nothing has changed since it was fetched; any edit invalidates it
+	// immediately and CertificatePreview falls back to its fast
+	// approximate live view until the next debounce settles.
+	const [liveRenderUrl, setLiveRenderUrl] = useState<string | null>(null);
+	const [liveRenderFresh, setLiveRenderFresh] = useState(false);
 	const [mobileMenuFieldId, setMobileMenuFieldId] = useState<string | null>(
 		null,
 	);
@@ -151,6 +158,7 @@ const CertificateEditor = ({
 		handleTemplateUpload,
 		handleBatchDownload,
 		handlePreview,
+		handleLiveRender,
 		handleSignatureUpload,
 		setUploadedPublicId,
 	} = useTemplateManager({
@@ -171,6 +179,40 @@ const CertificateEditor = ({
 	const isSimple = mode === "simple";
 	const hasTemplate = !!templateUrl;
 	const mobileMenuField = fields.find((f) => f.id === mobileMenuFieldId) ?? null;
+
+	// Keeps the canvas showing the actual backend-rendered certificate
+	// whenever nothing has changed for a moment, instead of only the fast
+	// approximate live overlay CertificatePreview draws while editing.
+	// Marking it stale immediately (before the timer even starts) means any
+	// edit — including continuous ones like a drag or a slider — falls back
+	// to the approximate view right away and only shows the real render once
+	// things are actually idle again.
+	useEffect(() => {
+		setLiveRenderFresh(false);
+		if (!hasTemplate) return;
+
+		const timer = setTimeout(async () => {
+			const url = await handleLiveRender();
+			if (url) {
+				setLiveRenderUrl(url);
+				setLiveRenderFresh(true);
+			}
+		}, 600);
+
+		return () => clearTimeout(timer);
+		// handleLiveRender closes over fields/templateFile/templateUrl fresh
+		// each render, so it doesn't need to be listed itself.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [fields, templateFile, templateUrl, hasTemplate]);
+
+	// Revokes the previous object URL whenever a fresh one replaces it, and
+	// the last one on unmount — same cleanup shape used for templateUrl in
+	// useTemplateManager.
+	useEffect(() => {
+		return () => {
+			if (liveRenderUrl) URL.revokeObjectURL(liveRenderUrl);
+		};
+	}, [liveRenderUrl]);
 
 	const handleOpenFieldMenu = (id: string, category?: "date" | "signature") => {
 		setMobileMenuFieldId(id);
@@ -599,6 +641,8 @@ const CertificateEditor = ({
 								showDragHint={showDragHint}
 								isMobile={isMobile}
 								onOpenFieldMenu={handleOpenFieldMenu}
+								liveRenderUrl={liveRenderUrl}
+								liveRenderFresh={liveRenderFresh}
 							/>
 						</div>
 					</ScrollArea>

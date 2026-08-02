@@ -380,6 +380,29 @@ def _check_recipient_gate(public_id: str, verification_token: str) -> Response |
     return None
 
 
+def _fetch_template_image_by_id(public_id: str) -> tuple["Image.Image | None", Response | None]:
+    """Fetch and decode a template PNG from Cloudinary by public_id.
+
+    Returns (image, None) on success or (None, error_response) on failure.
+    Shared by the public participant path and the editor's own "fetch my
+    already-uploaded draft instead of re-uploading it" path.
+    """
+    if len(public_id) > 255:
+        return None, Response({"error": "certificateId is too long."}, status=400)
+
+    url = f"https://res.cloudinary.com/{CLOUDINARY_CLOUD_NAME}/image/upload/{public_id}.png"
+    try:
+        resp = requests.get(url, timeout=15)
+        resp.raise_for_status()
+        content_type = resp.headers.get("Content-Type", "")
+        if not content_type.startswith("image/"):
+            return None, Response({"error": "Certificate template is not an image."}, status=502)
+        return Image.open(BytesIO(resp.content)).convert("RGBA"), None
+    except requests.RequestException as exc:
+        logger.warning("Failed to fetch template %s: %s", public_id, exc)
+        return None, Response({"error": "Failed to fetch certificate template."}, status=502)
+
+
 def _check_self_serve_cap(public_id: str) -> Response | None:
     """
     Returns a 402 Response once a free-tier template's open public link has
@@ -456,10 +479,11 @@ def generate(request):
     data = request.data
     public_id = data.get("certificateId", "").strip()
     in_editor = data.get("inEditor") == "true"
-    # "preview" (the editor's Preview button) reuses this same endpoint but
-    # shouldn't count as a real issuance. Anything else — including the
-    # editor's own Download button and the public participant link, which
-    # doesn't send this field at all — defaults to counting.
+    # "preview" (the editor's Preview button) and "live" (the editor's
+    # background auto-refresh, see GenerateThrottle) reuse this same
+    # endpoint but shouldn't count as a real issuance. Anything else —
+    # including the editor's own Download button and the public participant
+    # link, which doesn't send this field at all — defaults to counting.
     purpose = data.get("purpose", "download")
 
     fields = parse_json_field(data.get("fields"), [])
@@ -486,20 +510,39 @@ def generate(request):
 
     if in_editor:
         template_file = request.FILES.get("template")
-        if not template_file:
+        if template_file:
+            err = _validate_image_file(template_file)
+            if err:
+                return Response({"error": err}, status=400)
+            try:
+                image = Image.open(template_file).convert("RGBA")
+            except Exception:
+                return Response({"error": "Could not open template image."}, status=400)
+        elif public_id:
+            # The editor's background "live" auto-refresh (see
+            # GenerateThrottle): the organizer's own draft was already
+            # uploaded once via /upload/, so instead of re-uploading the
+            # full file on every debounce tick, subsequent renders fetch it
+            # by id. Ownership must be checked explicitly here — unlike the
+            # public participant path below, there's no recipient/self-serve
+            # gating for this path, so it must never be reachable for a
+            # template that isn't the caller's own (public_ids are exposed
+            # in shareable participant links, so they're not secret).
+            if not request.user.is_authenticated:
+                return Response({"error": "Authentication required."}, status=401)
+            owns_template = Templates.objects.filter(
+                public_id=public_id, user=request.user
+            ).exists()
+            if not owns_template:
+                return Response({"error": "Template not found."}, status=404)
+            image, err = _fetch_template_image_by_id(public_id)
+            if err:
+                return err
+        else:
             return Response({"error": "Template file is required in editor mode."}, status=400)
-        err = _validate_image_file(template_file)
-        if err:
-            return Response({"error": err}, status=400)
-        try:
-            image = Image.open(template_file).convert("RGBA")
-        except Exception:
-            return Response({"error": "Could not open template image."}, status=400)
     else:
         if not public_id:
             return Response({"error": "certificateId is required."}, status=400)
-        if len(public_id) > 255:
-            return Response({"error": "certificateId is too long."}, status=400)
 
         err = _check_recipient_gate(public_id, data.get("verificationToken", ""))
         if err:
@@ -509,17 +552,9 @@ def generate(request):
         if err:
             return err
 
-        url = f"https://res.cloudinary.com/{CLOUDINARY_CLOUD_NAME}/image/upload/{public_id}.png"
-        try:
-            resp = requests.get(url, timeout=15)
-            resp.raise_for_status()
-            content_type = resp.headers.get("Content-Type", "")
-            if not content_type.startswith("image/"):
-                return Response({"error": "Certificate template is not an image."}, status=502)
-            image = Image.open(BytesIO(resp.content)).convert("RGBA")
-        except requests.RequestException as exc:
-            logger.warning("Failed to fetch template %s: %s", public_id, exc)
-            return Response({"error": "Failed to fetch certificate template."}, status=502)
+        image, err = _fetch_template_image_by_id(public_id)
+        if err:
+            return err
 
     try:
         buffer = process_image(image, fields)
@@ -529,10 +564,10 @@ def generate(request):
         logger.exception("Image processing failed: %s", exc)
         return Response({"error": "Certificate generation failed."}, status=500)
 
-    if purpose != "preview" and public_id:
+    if purpose not in ("preview", "live") and public_id:
         # Count against a published template whenever we can attribute this
         # generation to one — the public participant link (always has a
-        # public_id, never a "preview"), and the editor's own Download
+        # public_id, never "preview"/"live"), and the editor's own Download
         # button once a template has been uploaded/published. A brand-new,
         # never-uploaded draft has no public_id yet, so there's nothing to
         # attribute it to and it's correctly skipped. in_editor distinguishes

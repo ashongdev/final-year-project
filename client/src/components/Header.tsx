@@ -230,9 +230,6 @@ const Header = ({ onTourClick }: HeaderProps) => {
 								<h1 className="font-playfair text-5xl font-bold italic tracking-tight text-foreground transition-colors group-hover:text-primary sm:text-6xl">
 									genC
 								</h1>
-								<span className="hidden text-xs uppercase tracking-[0.3em] text-muted-foreground sm:inline">
-									Certificates, Designed
-								</span>
 							</Link>
 
 							<div className="flex flex-wrap items-center gap-3">{controls}</div>
