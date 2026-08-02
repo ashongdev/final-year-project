@@ -28,6 +28,10 @@ class Templates(models.Model):
     # (which upload a raw file rather than referencing a published template)
     # are not counted, since those aren't real certificate issuances.
     generation_count = models.PositiveIntegerField(default=0)
+    # The editor's live TextField[] array (same shape sent to /generate/),
+    # auto-saved as the organizer edits so reopening this template restores
+    # exactly what they left, instead of a blank/default field layout.
+    draft_fields = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, db_index=True)
 

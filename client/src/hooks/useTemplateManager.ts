@@ -195,6 +195,27 @@ const useTemplateManager = ({
 		return URL.createObjectURL(blob);
 	};
 
+	/**
+	 * Auto-saves the current field layout for the template already saved
+	 * under uploadedPublicId, so reopening it later restores exactly this,
+	 * not a blank/default field. Silent on failure — background nicety, not
+	 * a user-initiated action, same spirit as handleLiveRender. Deliberately
+	 * sends the raw, unfiltered `fields` (including hidden ones), since a
+	 * draft needs to reproduce the full editor state, not just what a
+	 * generated certificate would show.
+	 */
+	const handleSaveDraft = async (): Promise<void> => {
+		if (!uploadedPublicId) return;
+		try {
+			await api.patch(`${BASE_URL}/templates/draft/`, {
+				public_id: uploadedPublicId,
+				fields,
+			});
+		} catch {
+			// Silent — see docstring.
+		}
+	};
+
 	const handleBatchDownload = async () => {
 		if (!hasTemplateSource(templateFile, templateUrl)) {
 			toast.error("Please upload a template first");
@@ -448,6 +469,7 @@ const useTemplateManager = ({
 		handleBatchDownload,
 		handlePreview,
 		handleLiveRender,
+		handleSaveDraft,
 		handleTemplateUpload,
 		handleFileSelect,
 		handleShareClick,

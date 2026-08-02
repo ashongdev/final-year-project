@@ -29,6 +29,14 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 
 interface HeaderProps {
 	onTourClick: () => void;
+	/**
+	 * Called before any of this header's own navigation (logo, nav links,
+	 * Dashboard/Login) actually navigates. Return false to block it — the
+	 * guard becomes responsible for showing its own UI and navigating for
+	 * real once confirmed (see useConfirmedNavigation). Defaults to
+	 * always-allow, so this is a no-op everywhere except where it's passed.
+	 */
+	guardNavigation?: (to: string) => boolean;
 }
 
 const navItems = [
@@ -43,7 +51,7 @@ const today = new Date().toLocaleDateString(undefined, {
 	day: "numeric",
 });
 
-const Header = ({ onTourClick }: HeaderProps) => {
+const Header = ({ onTourClick, guardNavigation }: HeaderProps) => {
 	const { theme, setTheme } = useTheme();
 	const navigate = useNavigate();
 	const { user, userName, isAuthenticated, isPro, logout } = useAuthContext();
@@ -72,11 +80,20 @@ const Header = ({ onTourClick }: HeaderProps) => {
 		navigate("/login");
 	};
 
+	const guardLinkClick =
+		(to: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+			if (guardNavigation && !guardNavigation(to)) e.preventDefault();
+		};
+
 	const controls = (
 		<>
 			{isAuthenticated ? (
 				<button
-					onClick={() => navigate("/dashboard")}
+					onClick={() => {
+						if (!guardNavigation || guardNavigation("/dashboard")) {
+							navigate("/dashboard");
+						}
+					}}
 					title="Dashboard"
 					className="flex items-center gap-1.5 border-2 border-foreground bg-secondary px-2.5 py-1.5 text-xs font-bold uppercase tracking-widest text-secondary-foreground shadow-[3px_3px_0_hsl(var(--foreground))] transition-all hover:-translate-y-0.5 sm:px-3.5"
 				>
@@ -85,7 +102,11 @@ const Header = ({ onTourClick }: HeaderProps) => {
 				</button>
 			) : (
 				<button
-					onClick={() => navigate("/login")}
+					onClick={() => {
+						if (!guardNavigation || guardNavigation("/login")) {
+							navigate("/login");
+						}
+					}}
 					title="Login"
 					className="flex items-center gap-1.5 border-2 border-foreground bg-primary px-2.5 py-1.5 text-xs font-bold uppercase tracking-widest text-primary-foreground shadow-[3px_3px_0_hsl(var(--foreground))] transition-all hover:-translate-y-0.5 sm:px-3.5"
 				>
@@ -225,7 +246,11 @@ const Header = ({ onTourClick }: HeaderProps) => {
 					>
 						{/* Nameplate */}
 						<div className="mx-auto flex max-w-[1400px] flex-col gap-3 px-5 pb-4 pt-1 sm:flex-row sm:items-end sm:justify-between sm:px-8">
-							<Link to="/" className="group flex items-center gap-3">
+							<Link
+								to="/"
+								onClick={guardLinkClick("/")}
+								className="group flex items-center gap-3"
+							>
 								<GencMark className="h-10 w-10 shrink-0 text-primary sm:h-12 sm:w-12" />
 								<h1 className="font-playfair text-5xl font-bold italic tracking-tight text-foreground transition-colors group-hover:text-primary sm:text-6xl">
 									genC
@@ -245,6 +270,7 @@ const Header = ({ onTourClick }: HeaderProps) => {
 						<>
 							<Link
 								to="/"
+								onClick={guardLinkClick("/")}
 								className="shrink-0 font-playfair text-lg font-bold italic text-foreground"
 							>
 								genC
@@ -261,6 +287,7 @@ const Header = ({ onTourClick }: HeaderProps) => {
 								)}
 								<Link
 									to={item.url}
+									onClick={guardLinkClick(item.url)}
 									className={cn(
 										"group flex shrink-0 items-baseline gap-1.5 whitespace-nowrap text-xs uppercase tracking-[0.15em] transition-colors",
 										isActive

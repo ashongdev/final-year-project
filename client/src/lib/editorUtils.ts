@@ -18,29 +18,11 @@ export const openTemplateInEditor = (
 	navigate: NavigateFunction,
 	template: Template,
 ) => {
-	const simulatedFields = [
-		{
-			id: "field-1",
-			label: "Participant Name",
-			text: "John Doe",
-			x: 0,
-			y: 0,
-			font: "Bickham Script Pro Regular",
-			fontSize: 100,
-			fontWeight: "300",
-			color: "#000000",
-			anchorMode: "center",
-			required: true,
-		},
-	];
-
-	navigate("/editor", {
-		state: {
-			templateUrl: template.url,
-			fields: simulatedFields,
-			templateFile: null,
-		},
-	});
+	// The editor loads the real template + its saved field layout itself
+	// from ?id= (see CertificateEditor's draft-loading effect) — this used
+	// to hand over a hardcoded fake field via location.state instead,
+	// silently discarding whatever the organizer had actually configured.
+	navigate(`/editor?id=${encodeURIComponent(template.public_id)}`);
 };
 
 const SAMPLE_RECIPIENTS = [

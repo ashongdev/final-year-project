@@ -23,6 +23,7 @@ from ..models import (
 )
 from ..pagination import MAX_PAGE_SIZE, get_pagination_params, paginate_queryset
 from ..serializer import CollectionSerializer, TemplateSerializer
+from ..util import parse_json_field
 
 logger = logging.getLogger("app")
 
@@ -288,6 +289,57 @@ def list_templates(request):
     items, pagination = paginate_queryset(qs, page, page_size)
     serializer = TemplateSerializer(items, many=True)
     return Response({"templates": serializer.data, "pagination": pagination})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def template_detail(request):
+    """Fetch a single owned template, including its saved draft field
+    layout — used by the editor to restore a template exactly as the
+    organizer left it (via ?id=<public_id> in the URL), instead of the
+    fake/default field the dashboard used to open templates with."""
+    public_id = (request.query_params.get("public_id") or "").strip()
+    if not public_id:
+        return Response({"error": "public_id is required."}, status=400)
+
+    template = Templates.objects.filter(
+        user=request.user, public_id=public_id
+    ).first()
+    if not template:
+        return Response({"error": "Template not found."}, status=404)
+
+    return Response(
+        {
+            "public_id": template.public_id,
+            "url": template.url,
+            "name": template.name,
+            "fields": template.draft_fields,
+        }
+    )
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def save_draft(request):
+    """Auto-save the editor's current field layout for an owned template.
+    Called on a debounce as the organizer edits — see the frontend's
+    handleLiveRender for the same silent-on-failure pattern, since this is
+    a background nicety, not a user-initiated action."""
+    public_id = (request.data.get("public_id") or "").strip()
+    if not public_id:
+        return Response({"error": "public_id is required."}, status=400)
+
+    fields = parse_json_field(request.data.get("fields"), None)
+    if not isinstance(fields, list):
+        return Response({"error": "fields must be a list."}, status=400)
+
+    updated = Templates.objects.filter(
+        user=request.user, public_id=public_id
+    ).update(draft_fields=fields)
+    if not updated:
+        return Response({"error": "Template not found."}, status=404)
+
+    return Response({"ok": True})
 
 
 @api_view(["PUT"])

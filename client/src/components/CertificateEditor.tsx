@@ -3,6 +3,7 @@ import ControlPanel from "@/components/ControlPanel";
 import Header from "@/components/Header";
 import MobileFieldMenu from "@/components/MobileFieldMenu";
 import RecipientManager from "@/components/RecipientManager";
+import UnsavedProgressDialog from "@/components/UnsavedProgressDialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +35,7 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { useAuthContext } from "@/hooks/useAuthContext";
+import { useConfirmedNavigation } from "@/hooks/useConfirmedNavigation";
 import useFunctions from "@/hooks/useFunctions";
 import { useIsMobile } from "@/hooks/use-mobile";
 import useTemplateManager from "@/hooks/useTemplateManager";
@@ -42,6 +44,7 @@ import { createDefaultTextField } from "@/lib/defaultField";
 import { copyLinkToClipboard, restartTour } from "@/lib/editorUtils";
 import { ADDABLE_FIELD_PRESETS } from "@/lib/fieldPresets";
 import { cn } from "@/lib/utils";
+import api from "@/services/axios";
 import { logActivity } from "@/services/dashboardApi";
 import type { Recipient, TextField } from "@/types/TextField";
 import axios from "axios";
@@ -63,7 +66,7 @@ import {
 	X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 interface CertificateEditorProps {
@@ -88,7 +91,8 @@ const CertificateEditor = ({
 	templateUseMode,
 }: CertificateEditorProps) => {
 	const navigate = useNavigate();
-	const { BASE_URL } = useAuthContext();
+	const [searchParams, setSearchParams] = useSearchParams();
+	const { BASE_URL, isAuthenticated } = useAuthContext();
 	const isMobile = useIsMobile();
 	const { startTour, resetTour } = useTour({
 		steps: tourSteps,
@@ -159,7 +163,9 @@ const CertificateEditor = ({
 		handleBatchDownload,
 		handlePreview,
 		handleLiveRender,
+		handleSaveDraft,
 		handleSignatureUpload,
+		uploadedPublicId,
 		setUploadedPublicId,
 	} = useTemplateManager({
 		templateFile,
@@ -180,6 +186,35 @@ const CertificateEditor = ({
 	const hasTemplate = !!templateUrl;
 	const mobileMenuField = fields.find((f) => f.id === mobileMenuFieldId) ?? null;
 
+	// A template that arrived pre-loaded (Switch to Advanced/Simple, or
+	// restored after signing in from UnsavedProgressDialog) was never
+	// actually silently uploaded — without this, draft auto-save and the
+	// live-render bandwidth optimization both silently do nothing, since
+	// neither has an uploadedPublicId to work with yet. Ref-gated to the
+	// file this component mounted with, so it can never fire again for a
+	// later, separate manual selection — handleFileSelect already uploads
+	// that directly, and racing both on the same file would double-upload.
+	const pendingSilentUploadRef = useRef(initialTemplateFile);
+	useEffect(() => {
+		if (!isAuthenticated || !pendingSilentUploadRef.current) return;
+		const file = pendingSilentUploadRef.current;
+		pendingSilentUploadRef.current = null;
+		void handleTemplateUpload(file);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isAuthenticated]);
+
+	// Guests can't persist anything (only Simple is guest-reachable at all —
+	// /advanced is already behind ProtectedRoute), so warn before letting
+	// them navigate away from a template they've actually started on.
+	const {
+		pendingHref,
+		guardNavigation,
+		cancel: cancelLeave,
+		confirmLeave,
+	} = useConfirmedNavigation({
+		armed: isSimple && !isAuthenticated && hasTemplate,
+	});
+
 	// Keeps the canvas showing the actual backend-rendered certificate
 	// whenever nothing has changed for a moment, instead of only the fast
 	// approximate live overlay CertificatePreview draws while editing.
@@ -197,13 +232,20 @@ const CertificateEditor = ({
 				setLiveRenderUrl(url);
 				setLiveRenderFresh(true);
 			}
+			// Piggybacks on the same settle tick rather than running its own
+			// competing debounce — a no-op (returns immediately) until
+			// there's an uploadedPublicId to save against.
+			if (isAuthenticated) {
+				void handleSaveDraft();
+			}
 		}, 600);
 
 		return () => clearTimeout(timer);
-		// handleLiveRender closes over fields/templateFile/templateUrl fresh
-		// each render, so it doesn't need to be listed itself.
+		// handleLiveRender/handleSaveDraft close over fields/templateFile/
+		// templateUrl/uploadedPublicId fresh each render, so they don't need
+		// to be listed themselves.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [fields, templateFile, templateUrl, hasTemplate]);
+	}, [fields, templateFile, templateUrl, hasTemplate, isAuthenticated]);
 
 	// Revokes the previous object URL whenever a fresh one replaces it, and
 	// the last one on unmount — same cleanup shape used for templateUrl in
@@ -213,6 +255,63 @@ const CertificateEditor = ({
 			if (liveRenderUrl) URL.revokeObjectURL(liveRenderUrl);
 		};
 	}, [liveRenderUrl]);
+
+	// Keeps the URL's ?id= in sync with whatever template is actually
+	// loaded, so refreshing or sharing the link comes back to the same
+	// draft. replace: true so autosaves don't spam browser history.
+	useEffect(() => {
+		if (!uploadedPublicId) return;
+		if (searchParams.get("id") === uploadedPublicId) return;
+		setSearchParams(
+			(prev) => {
+				const next = new URLSearchParams(prev);
+				next.set("id", uploadedPublicId);
+				return next;
+			},
+			{ replace: true },
+		);
+	}, [uploadedPublicId, searchParams, setSearchParams]);
+
+	// Loads a template + its saved draft field layout from ?id= — how the
+	// dashboard's "continue editing" and a refreshed/shared editor URL both
+	// restore state. Guarded on uploadedPublicIdRef (not state, so this
+	// effect isn't re-triggered by the URL-sync effect above writing the
+	// very id this one would otherwise re-fetch) rather than re-running any
+	// time uploadedPublicId changes for an unrelated reason.
+	const uploadedPublicIdRef = useRef(uploadedPublicId);
+	useEffect(() => {
+		uploadedPublicIdRef.current = uploadedPublicId;
+	}, [uploadedPublicId]);
+
+	useEffect(() => {
+		const id = searchParams.get("id");
+		if (!id || !isAuthenticated) return;
+		if (id === uploadedPublicIdRef.current) return;
+
+		let cancelled = false;
+		(async () => {
+			try {
+				const res = await api.get(`${BASE_URL}/templates/detail/`, {
+					params: { public_id: id },
+				});
+				if (cancelled) return;
+				setTemplateUrl(res.data.url);
+				setTemplateFile(null);
+				setUploadedPublicId(res.data.public_id);
+				if (Array.isArray(res.data.fields) && res.data.fields.length > 0) {
+					setFields(res.data.fields);
+					setSelectedFieldId(res.data.fields[0].id);
+				}
+			} catch {
+				if (!cancelled) toast.error("Couldn't load that template.");
+			}
+		})();
+
+		return () => {
+			cancelled = true;
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [searchParams, isAuthenticated, BASE_URL]);
 
 	const handleOpenFieldMenu = (id: string, category?: "date" | "signature") => {
 		setMobileMenuFieldId(id);
@@ -389,7 +488,10 @@ const CertificateEditor = ({
 
 	return (
 		<div className="h-screen bg-background flex flex-col overflow-hidden">
-			<Header onTourClick={() => restartTour(resetTour, startTour)} />
+			<Header
+				onTourClick={() => restartTour(resetTour, startTour)}
+				guardNavigation={guardNavigation}
+			/>
 
 			{isSimple && templateUseMode === "testing" && (
 				<Alert className="rounded-none border-x-0 border-t-0 bg-muted/50">
@@ -450,11 +552,12 @@ const CertificateEditor = ({
 						variant="ghost"
 						size="sm"
 						className="shrink-0 text-muted-foreground hover:text-primary"
-						onClick={() =>
+						onClick={() => {
+							if (!guardNavigation("/advanced")) return;
 							navigate("/advanced", {
 								state: { fields, templateUrl, templateFile },
-							})
-						}
+							});
+						}}
 						title="Switch to Advanced"
 					>
 						<span className="sm:hidden">Advanced</span>
@@ -976,6 +1079,23 @@ const CertificateEditor = ({
 				simpleView={isSimple}
 				isPrimaryField={mobileMenuField?.id === fields[0]?.id}
 				onUploadSignature={handleSignatureUpload}
+			/>
+
+			<UnsavedProgressDialog
+				open={pendingHref !== null}
+				onCancel={cancelLeave}
+				onLeave={confirmLeave}
+				sessionState={{
+					fields,
+					recipients,
+					templateUseMode,
+					mode,
+					// A local, not-yet-uploaded file's templateUrl is just its
+					// blob: URL — invalid after navigating away, so only pass
+					// templateUrl through when it's a real remote one.
+					templateUrl: templateFile ? null : templateUrl,
+					templateFile,
+				}}
 			/>
 		</div>
 	);

@@ -6,9 +6,10 @@ import GoogleSvg from "@/components/ui/GoogleSvg";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import useAuth from "@/hooks/useAuth";
+import { stashPostLoginRedirect } from "@/lib/postLoginRedirect";
 import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, type Location } from "react-router-dom";
 
 const fieldClass =
 	"rounded-none border-x-0 border-t-0 border-b-2 border-foreground/30 bg-transparent px-0 text-base focus-visible:border-primary focus-visible:ring-0";
@@ -18,6 +19,16 @@ const Login = () => {
 	const [password, setPassword] = useState("");
 	const [showPassword, setShowPassword] = useState(false);
 	const { handleGoogleLogin } = useAuth();
+	const location = useLocation();
+
+	// ProtectedRoute's own "Sign In" link (and UnsavedProgressDialog's) both
+	// set this — stash it now since the Google OAuth round-trip is a
+	// full-page redirect that drops React Router's in-memory state.
+	// GoogleCallback.tsx reads it back once auth completes.
+	useEffect(() => {
+		const from = (location.state as { from?: Location } | null)?.from;
+		if (from) stashPostLoginRedirect(from);
+	}, [location.state]);
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();

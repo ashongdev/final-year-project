@@ -23,7 +23,9 @@ from .views.dashboard import (
     log_activity,
     rename_collection,
     rename_template,
+    save_draft,
     set_template_state,
+    template_detail,
 )
 from .views.participant import (
     request_verification_code,
@@ -83,6 +85,8 @@ urlpatterns = [
     path("dashboard/analytics/", analytics, name="analytics"),
     path("activity/log/", log_activity, name="log_activity"),
     path("templates/", list_templates, name="list_templates"),
+    path("templates/detail/", template_detail, name="template_detail"),
+    path("templates/draft/", save_draft, name="save_draft"),
     path("templates/rename/", rename_template, name="rename_template"),
     path("templates/state/", set_template_state, name="set_template_state"),
     path("templates/assign-collection/", assign_collection, name="assign_collection"),

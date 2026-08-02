@@ -1,11 +1,15 @@
 import { useAuthContext } from "@/hooks/useAuthContext";
+import { restorePendingSession } from "@/lib/pendingSession";
+import { consumePostLoginRedirect } from "@/lib/postLoginRedirect";
 import api, { primeCsrfToken } from "@/services/axios";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const GoogleCallback = () => {
-	const { BASE_URL } = useAuthContext();
+	const { BASE_URL, refreshAuth } = useAuthContext();
+	const navigate = useNavigate();
+
 	async function handleGoogleCallback() {
 		const params = new URLSearchParams(window.location.search);
 		const code = params.get("code");
@@ -24,13 +28,38 @@ const GoogleCallback = () => {
 			},
 		);
 
-		if (response.status === 200) {
-			window.location.href = "/dashboard";
+		if (response.status !== 200) return;
+
+		// Now actually signed in — refresh the app's auth state ourselves,
+		// since navigating client-side (below, so any restored editor state
+		// survives) won't trigger AuthProvider's own mount-time check again.
+		await refreshAuth();
+
+		const redirectPath = consumePostLoginRedirect() ?? "/dashboard";
+		const session = await restorePendingSession();
+
+		if (session) {
+			// Matches the location.state shape Editor.tsx (and Advanced.tsx)
+			// already read — this is how a guest's in-progress template and
+			// fields survive the round trip to Google and back after
+			// choosing "Sign In" from UnsavedProgressDialog.
+			navigate(redirectPath, {
+				state: {
+					fields: session.fields,
+					recipients: session.recipients,
+					templateUseMode: session.templateUseMode,
+					templateUrl: session.templateUrl,
+					templateFile: session.templateFile,
+				},
+			});
+		} else {
+			navigate(redirectPath);
 		}
 	}
 
 	useEffect(() => {
 		handleGoogleCallback();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	return (
