@@ -294,7 +294,7 @@ const CollectionsPage = ({
 						{description}
 					</p>
 				</div>
-				{right && <div className="flex items-center gap-4">{right}</div>}
+				{right && <div className="flex flex-wrap items-center gap-4">{right}</div>}
 			</div>
 		</div>
 	);
@@ -403,7 +403,7 @@ const CollectionsPage = ({
 							to select, double-click to open
 						</p>
 					</div>
-					<div className="flex items-center gap-4">
+					<div className="flex flex-wrap items-center gap-4">
 						<LayoutToggle />
 						<button
 							onClick={() =>

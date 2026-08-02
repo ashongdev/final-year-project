@@ -2,6 +2,7 @@ import CertificatePreview from "@/components/CertificatePreview";
 import ControlPanel from "@/components/ControlPanel";
 import EditorAuthFooter from "@/components/EditorAuthFooter";
 import Header from "@/components/Header";
+import MobileFieldMenu from "@/components/MobileFieldMenu";
 import RecipientManager from "@/components/RecipientManager";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ import {
 } from "@/components/ui/sheet";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import useFunctions from "@/hooks/useFunctions";
+import { useIsMobile } from "@/hooks/use-mobile";
 import useTemplateManager from "@/hooks/useTemplateManager";
 import { useTour } from "@/hooks/useTour";
 import { createDefaultTextField } from "@/lib/defaultField";
@@ -88,6 +90,7 @@ const CertificateEditor = ({
 }: CertificateEditorProps) => {
 	const navigate = useNavigate();
 	const { BASE_URL } = useAuthContext();
+	const isMobile = useIsMobile();
 	const { startTour, resetTour } = useTour({
 		steps: tourSteps,
 		storageKey: tourStorageKey,
@@ -112,6 +115,12 @@ const CertificateEditor = ({
 	const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(
 		null,
 	);
+	const [mobileMenuFieldId, setMobileMenuFieldId] = useState<string | null>(
+		null,
+	);
+	const [mobileMenuCategory, setMobileMenuCategory] = useState<
+		"date" | "signature" | null
+	>(null);
 
 	const previewRef = useRef<HTMLDivElement>(null);
 	const imgRef = useRef<HTMLImageElement>(null);
@@ -162,6 +171,12 @@ const CertificateEditor = ({
 
 	const isSimple = mode === "simple";
 	const hasTemplate = !!templateUrl;
+	const mobileMenuField = fields.find((f) => f.id === mobileMenuFieldId) ?? null;
+
+	const handleOpenFieldMenu = (id: string, category?: "date" | "signature") => {
+		setMobileMenuFieldId(id);
+		setMobileMenuCategory(category ?? null);
+	};
 
 	const handleGenerateClick = async () => {
 		if (isGenerating) return;
@@ -275,7 +290,8 @@ const CertificateEditor = ({
 				showSharePanel ||
 				showLoadDialog ||
 				showPreviewDialog ||
-				showShortcutsDialog
+				showShortcutsDialog ||
+				mobileMenuFieldId
 			)
 				return;
 			const tag = (document.activeElement?.tagName || "").toLowerCase();
@@ -324,6 +340,7 @@ const CertificateEditor = ({
 		showLoadDialog,
 		showPreviewDialog,
 		showShortcutsDialog,
+		mobileMenuFieldId,
 		updateField,
 		removeField,
 		duplicateField,
@@ -416,15 +433,17 @@ const CertificateEditor = ({
 				)}
 
 				<div className="ml-auto flex items-center gap-2 shrink-0">
-					<Button
-						variant="ghost"
-						size="icon"
-						className="h-9 w-9 text-muted-foreground hover:text-foreground"
-						onClick={() => setShowShortcutsDialog(true)}
-						title="Keyboard shortcuts"
-					>
-						<Keyboard className="h-4 w-4" />
-					</Button>
+					{!isMobile && (
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-9 w-9 text-muted-foreground hover:text-foreground"
+							onClick={() => setShowShortcutsDialog(true)}
+							title="Keyboard shortcuts"
+						>
+							<Keyboard className="h-4 w-4" />
+						</Button>
+					)}
 
 					<Button
 						variant="outline"
@@ -486,7 +505,7 @@ const CertificateEditor = ({
 									key={field.id}
 									onClick={() => setSelectedFieldId(field.id)}
 									className={cn(
-										"group shrink-0 flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+										"group shrink-0 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
 										field.id === selectedFieldId
 											? "border-primary bg-primary/10 text-primary"
 											: "border-border text-muted-foreground hover:text-foreground hover:bg-muted",
@@ -494,7 +513,9 @@ const CertificateEditor = ({
 									)}
 								>
 									{field.label}
-									{i > 0 && (
+									{/* On mobile, hide/remove move into the three-dot field
+									menu instead — these tiny icons are hard to hit on touch. */}
+									{!isMobile && i > 0 && (
 										<button
 											type="button"
 											onClick={(e) => {
@@ -511,7 +532,7 @@ const CertificateEditor = ({
 											)}
 										</button>
 									)}
-									{fields.length > 1 && (
+									{!isMobile && fields.length > 1 && (
 										<X
 											className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
 											onClick={(e) => {
@@ -526,7 +547,7 @@ const CertificateEditor = ({
 								<DropdownMenuTrigger asChild>
 									<button
 										data-tour="add-field-btn"
-										className="shrink-0 flex items-center gap-1 rounded-full border border-dashed border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+										className="shrink-0 flex items-center gap-1 rounded-full border border-dashed border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary"
 									>
 										<Plus className="h-3 w-3" />
 										Add Field
@@ -569,30 +590,35 @@ const CertificateEditor = ({
 								onFieldMove={(id, x, y) => updateField(id, { x, y })}
 								onFieldResize={updateField}
 								showDragHint={showDragHint}
+								isMobile={isMobile}
+								onOpenFieldMenu={handleOpenFieldMenu}
 							/>
 						</div>
 					</ScrollArea>
 
 					{hasTemplate && (
 						<p className="text-center text-xs text-muted-foreground pb-3 shrink-0">
-							Drag the text to reposition · arrow keys to nudge
-							(hold Shift for bigger steps)
+							{isMobile
+								? "Tap a field to select it, drag to reposition, or tap again to edit"
+								: "Drag the text to reposition · arrow keys to nudge (hold Shift for bigger steps)"}
 						</p>
 					)}
 				</div>
 
-				<div
-					className="w-[300px] flex-shrink-0 min-h-0 border-l border-border overflow-hidden flex flex-col px-2 pt-4"
-					data-tour="control-panel"
-				>
-					<ControlPanel
-						fields={fields}
-						selectedFieldId={selectedFieldId}
-						onFieldUpdate={updateField}
-						simpleView={isSimple}
-						onUploadSignature={handleSignatureUpload}
-					/>
-				</div>
+				{!isMobile && (
+					<div
+						className="w-[300px] flex-shrink-0 min-h-0 border-l border-border overflow-hidden flex flex-col px-2 pt-4"
+						data-tour="control-panel"
+					>
+						<ControlPanel
+							fields={fields}
+							selectedFieldId={selectedFieldId}
+							onFieldUpdate={updateField}
+							simpleView={isSimple}
+							onUploadSignature={handleSignatureUpload}
+						/>
+					</div>
+				)}
 			</main>
 
 			<Sheet open={showSharePanel} onOpenChange={setShowSharePanel}>
@@ -833,6 +859,23 @@ const CertificateEditor = ({
 					</div>
 				</DialogContent>
 			</Dialog>
+
+			<MobileFieldMenu
+				field={mobileMenuField}
+				open={!!mobileMenuFieldId}
+				onOpenChange={(open) => {
+					if (!open) {
+						setMobileMenuFieldId(null);
+						setMobileMenuCategory(null);
+					}
+				}}
+				initialCategory={mobileMenuCategory}
+				onFieldUpdate={updateField}
+				onRemoveField={removeField}
+				simpleView={isSimple}
+				isPrimaryField={mobileMenuField?.id === fields[0]?.id}
+				onUploadSignature={handleSignatureUpload}
+			/>
 
 			{isSimple && <EditorAuthFooter />}
 		</div>

@@ -165,9 +165,9 @@ const DashboardIndex = () => {
 							key={stamp.label}
 							onClick={stamp.onClick}
 							className={cn(
-								"group relative flex h-32 w-32 shrink-0 flex-col items-center justify-center gap-1 rounded-full border-2 border-dashed border-foreground/70 bg-card text-center shadow-[3px_3px_0_hsl(var(--foreground)/0.15)] transition-transform hover:rotate-0 hover:scale-105 sm:h-36 sm:w-36",
+								"group relative flex h-20 w-20 shrink-0 flex-col items-center justify-center gap-1 rounded-full border-2 border-dashed border-foreground/70 bg-card text-center shadow-[3px_3px_0_hsl(var(--foreground)/0.15)] transition-transform hover:rotate-0 hover:scale-105 sm:h-32 sm:w-32 lg:h-36 lg:w-36",
 								STAMP_ROTATIONS[i % STAMP_ROTATIONS.length],
-								i > 0 && "-ml-6",
+								i > 0 && "-ml-4 sm:-ml-6",
 							)}
 							style={{ zIndex: stamps.length - i }}
 						>

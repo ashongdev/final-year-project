@@ -285,7 +285,7 @@ const TemplatesPage = ({
 							</Link>
 						)}
 					</div>
-					<div className="flex items-center gap-4">
+					<div className="flex flex-wrap items-center gap-4">
 						<button
 							onClick={() => navigate("/dashboard/trash")}
 							className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground transition-colors hover:text-foreground"

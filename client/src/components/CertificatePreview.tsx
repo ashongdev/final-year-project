@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { TextField } from "@/types/TextField";
 import { motion } from "framer-motion";
+import { MoreVertical } from "lucide-react";
 import { RefObject, useEffect, useRef, useState } from "react";
 
 interface CertificatePreviewProps {
@@ -18,11 +19,30 @@ interface CertificatePreviewProps {
 	 * When provided (and not isParticipant), the selected field shows corner
 	 * handles for drag-to-resize. Deliberately a separate prop from
 	 * onFieldMove: resizing is organizer-only even where dragging isn't.
+	 * Also reused to commit inline text edits on mobile (it's already a
+	 * generic partial-update callback).
 	 */
 	onFieldResize?: (id: string, updates: Partial<TextField>) => void;
 	/** Briefly pulses the selected field to hint that it can be dragged. */
 	showDragHint?: boolean;
+	/**
+	 * On mobile, a tap on an already-selected text field enters inline
+	 * editing directly; a plain/typeless field has no such affordance, so
+	 * this switches tap-to-select/drag semantics and shows the three-dot
+	 * field menu trigger.
+	 */
+	isMobile?: boolean;
+	/**
+	 * Opens the mobile field-settings menu for this field. A category is
+	 * passed when a date/signature field is tapped a second time (jumping
+	 * straight to its relevant control, since it has no inline-editable
+	 * text); omitted when opened via the three-dot trigger (shows the
+	 * category list instead).
+	 */
+	onOpenFieldMenu?: (id: string, category?: "date" | "signature") => void;
 }
+
+const TAP_DRAG_THRESHOLD_PX = 6;
 
 type ResizeCorner = "tl" | "tr" | "bl" | "br";
 
@@ -56,6 +76,8 @@ const CertificatePreview = ({
 	onFieldMove,
 	onFieldResize,
 	showDragHint = false,
+	isMobile = false,
+	onOpenFieldMenu,
 }: CertificatePreviewProps) => {
 	const [imageScale, setImageScale] = useState({
 		scale: 1,
@@ -66,6 +88,39 @@ const CertificatePreview = ({
 	const resizeState = useRef<ResizeState | null>(null);
 	const isDraggable = !isParticipant && !!onFieldMove;
 	const isResizable = !isParticipant && !!onFieldResize;
+
+	// Mobile tap-to-edit: both a tap and the start of a drag begin on the
+	// same pointerdown, so a field is only treated as "tapped" (as opposed
+	// to dragged) if the pointer never moved past a small threshold before
+	// lifting.
+	const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
+	const dragStartPos = useRef<{ x: number; y: number } | null>(null);
+	const hasMovedRef = useRef(false);
+	const wasAlreadySelectedRef = useRef(false);
+
+	// Only the ref is read on entering edit mode (see effect below) — kept
+	// out of that effect's deps so it doesn't re-run (and re-place the
+	// caret) on every keystroke while the field's text is being committed
+	// back into `fields` on each input.
+	const fieldsRef = useRef(fields);
+	fieldsRef.current = fields;
+
+	useEffect(() => {
+		if (!editingFieldId) return;
+		const el = previewRef.current?.querySelector<HTMLElement>(
+			`[data-field-id="${editingFieldId}"]`,
+		);
+		if (!el) return;
+		const field = fieldsRef.current.find((f) => f.id === editingFieldId);
+		if (field) el.textContent = field.text;
+		el.focus();
+		const range = document.createRange();
+		range.selectNodeContents(el);
+		range.collapse(false);
+		const selection = window.getSelection();
+		selection?.removeAllRanges();
+		selection?.addRange(range);
+	}, [editingFieldId, previewRef]);
 
 	// Calculate actual image dimensions and scale
 	useEffect(() => {
@@ -134,22 +189,53 @@ const CertificatePreview = ({
 		fieldId: string,
 	) => {
 		if (!isDraggable) return;
+		// Editing already owns this field's taps — let a second tap place a
+		// caret instead of starting a drag.
+		if (editingFieldId === fieldId) return;
 		e.preventDefault();
 		e.stopPropagation();
+		wasAlreadySelectedRef.current = fieldId === selectedFieldId;
 		onFieldSelect(fieldId);
 		draggingId.current = fieldId;
+		dragStartPos.current = { x: e.clientX, y: e.clientY };
+		hasMovedRef.current = false;
 		e.currentTarget.setPointerCapture(e.pointerId);
 	};
 
 	const handlePointerMove = (e: React.PointerEvent<HTMLSpanElement>, fieldId: string) => {
 		if (draggingId.current !== fieldId) return;
-		movePointerToField(fieldId, e.clientX, e.clientY);
+		if (dragStartPos.current && !hasMovedRef.current) {
+			const dx = e.clientX - dragStartPos.current.x;
+			const dy = e.clientY - dragStartPos.current.y;
+			if (Math.hypot(dx, dy) > TAP_DRAG_THRESHOLD_PX) {
+				hasMovedRef.current = true;
+			}
+		}
+		if (hasMovedRef.current) {
+			movePointerToField(fieldId, e.clientX, e.clientY);
+		}
 	};
 
-	const handlePointerUp = (e: React.PointerEvent<HTMLSpanElement>) => {
+	const handlePointerUp = (e: React.PointerEvent<HTMLSpanElement>, field: TextField) => {
 		if (!draggingId.current) return;
+		const fieldId = draggingId.current;
+		const wasTap = !hasMovedRef.current;
 		draggingId.current = null;
 		e.currentTarget.releasePointerCapture(e.pointerId);
+
+		if (!isMobile || !wasTap) return;
+		// First tap only selects (already handled in pointerdown); a second
+		// tap on an already-selected field either starts inline text editing,
+		// or, for fields with no free text to edit, opens the mobile settings
+		// menu directly on the relevant category.
+		if (!wasAlreadySelectedRef.current) return;
+		if (field.preset === "date") {
+			onOpenFieldMenu?.(fieldId, "date");
+		} else if (field.preset === "signatory") {
+			onOpenFieldMenu?.(fieldId, "signature");
+		} else {
+			setEditingFieldId(fieldId);
+		}
 	};
 
 	const handleResizePointerDown = (
@@ -246,6 +332,7 @@ const CertificatePreview = ({
 							const pulseDragHint =
 								isDraggable && isSelected && showDragHint;
 							const isImageField = !!field.imageUrl;
+							const isEditing = editingFieldId === field.id;
 							return (
 								<motion.span
 									key={field.id}
@@ -269,7 +356,7 @@ const CertificatePreview = ({
 									}
 									onPointerDown={(e) => handlePointerDown(e, field.id)}
 									onPointerMove={(e) => handlePointerMove(e, field.id)}
-									onPointerUp={handlePointerUp}
+									onPointerUp={(e) => handlePointerUp(e, field)}
 									onClick={(e) => {
 										if (isDraggable) {
 											// Selection already happens on pointerdown when draggable.
@@ -277,6 +364,25 @@ const CertificatePreview = ({
 											return;
 										}
 										if (!isParticipant) onFieldSelect(field.id);
+									}}
+									contentEditable={isEditing}
+									suppressContentEditableWarning
+									data-field-id={field.id}
+									onInput={(e) => {
+										if (!isEditing) return;
+										onFieldResize?.(field.id, {
+											text: e.currentTarget.textContent ?? "",
+										});
+									}}
+									onBlur={() => {
+										if (isEditing) setEditingFieldId(null);
+									}}
+									onKeyDown={(e) => {
+										if (!isEditing) return;
+										if (e.key === "Enter" || e.key === "Escape") {
+											e.preventDefault();
+											e.currentTarget.blur();
+										}
 									}}
 									className="absolute select-none"
 									style={{
@@ -304,19 +410,25 @@ const CertificatePreview = ({
 										lineHeight: "1",
 										padding: isSelected ? "6px 10px" : "0",
 										margin: isSelected ? "-6px -10px" : "0",
-										cursor: isDraggable
-											? draggingId.current === field.id
-												? "grabbing"
-												: "grab"
-											: !isParticipant
-												? "pointer"
-												: "default",
+										cursor: isEditing
+											? "text"
+											: isDraggable
+												? draggingId.current === field.id
+													? "grabbing"
+													: "grab"
+												: !isParticipant
+													? "pointer"
+													: "default",
 										outline: isSelected
 											? "2px dashed hsl(var(--primary))"
 											: "none",
 										outlineOffset: isSelected ? "2px" : "0",
 										borderRadius: isSelected ? "4px" : "0",
-										touchAction: isDraggable ? "none" : "auto",
+										touchAction: isEditing
+											? "auto"
+											: isDraggable
+												? "none"
+												: "auto",
 									}}
 								>
 									{isImageField ? (
@@ -327,10 +439,10 @@ const CertificatePreview = ({
 											className="h-full w-full object-contain"
 										/>
 									) : (
-										field.text
+										!isEditing && field.text
 									)}
 
-									{isSelected && isResizable && (
+									{isSelected && isResizable && !isMobile && (
 										<>
 											{(["tl", "tr", "bl", "br"] as const).map(
 												(corner) => (
@@ -361,6 +473,22 @@ const CertificatePreview = ({
 												),
 											)}
 										</>
+									)}
+
+									{isSelected && isMobile && !isParticipant && (
+										<button
+											type="button"
+											onPointerDown={(e) => e.stopPropagation()}
+											onClick={(e) => {
+												e.stopPropagation();
+												onOpenFieldMenu?.(field.id);
+											}}
+											className="absolute right-0 top-0 z-10 flex h-6 w-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-sm"
+											style={{ touchAction: "none" }}
+											aria-label="Field settings"
+										>
+											<MoreVertical className="h-3.5 w-3.5" />
+										</button>
 									)}
 								</motion.span>
 							);

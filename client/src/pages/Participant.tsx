@@ -1091,7 +1091,7 @@ const Participant = () => {
 								</div>
 
 								{/* Right Controls - Styling & Download */}
-								<div className="h-full max-w-[264px] flex flex-col gap-4">
+								<div className="h-full w-full flex flex-col gap-4 lg:max-w-[264px]">
 									<ParticipantControlPanel
 										participantName={participantName}
 										onParticipantNameChange={

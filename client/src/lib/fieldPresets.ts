@@ -23,6 +23,17 @@ export const DATE_FORMAT_OPTIONS = [
 	{ value: "d MMMM yyyy", label: "D MMMM YYYY" },
 ];
 
+export const PREDEFINED_COLORS = [
+	"#000000", // Black
+	"#FFFFFF", // White
+	"#1E293B", // Slope Slate
+	"#EF4444", // Red
+	"#22C55E", // Green
+	"#3B82F6", // Blue
+	"#F59E0B", // Amber
+	"#8B5CF6", // Violet
+];
+
 export interface FieldPresetDef {
 	id: FieldPreset;
 	label: string;
