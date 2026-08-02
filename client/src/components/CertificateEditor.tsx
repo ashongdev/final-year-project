@@ -1,6 +1,5 @@
 import CertificatePreview from "@/components/CertificatePreview";
 import ControlPanel from "@/components/ControlPanel";
-import EditorAuthFooter from "@/components/EditorAuthFooter";
 import Header from "@/components/Header";
 import MobileFieldMenu from "@/components/MobileFieldMenu";
 import RecipientManager from "@/components/RecipientManager";
@@ -380,9 +379,12 @@ const CertificateEditor = ({
 					size="sm"
 					className="gap-2 shrink-0"
 					onClick={() => fileInputRef.current?.click()}
+					title={hasTemplate ? "Change Template" : "Upload Template"}
 				>
 					<Upload className="h-4 w-4" />
-					{hasTemplate ? "Change Template" : "Upload Template"}
+					<span className="hidden sm:inline">
+						{hasTemplate ? "Change Template" : "Upload Template"}
+					</span>
 				</Button>
 
 				<Button
@@ -393,9 +395,10 @@ const CertificateEditor = ({
 						setLoadError(null);
 						setShowLoadDialog(true);
 					}}
+					title="Load by ID"
 				>
 					<Search className="h-4 w-4" />
-					Load by ID
+					<span className="hidden sm:inline">Load by ID</span>
 				</Button>
 
 				<div className="h-5 w-px bg-border shrink-0" aria-hidden />
@@ -410,8 +413,10 @@ const CertificateEditor = ({
 								state: { fields, templateUrl, templateFile },
 							})
 						}
+						title="Switch to Advanced"
 					>
-						Switch to Advanced
+						<span className="sm:hidden">Advanced</span>
+						<span className="hidden sm:inline">Switch to Advanced</span>
 					</Button>
 				) : (
 					<Button
@@ -427,13 +432,15 @@ const CertificateEditor = ({
 								},
 							})
 						}
+						title="Simple Editor"
 					>
-						&larr; Simple Editor
+						<span className="sm:hidden">&larr; Simple</span>
+						<span className="hidden sm:inline">&larr; Simple Editor</span>
 					</Button>
 				)}
 
-				<div className="ml-auto flex items-center gap-2 shrink-0">
-					{!isMobile && (
+				{!isMobile && (
+					<div className="ml-auto flex items-center gap-2 shrink-0">
 						<Button
 							variant="ghost"
 							size="icon"
@@ -443,54 +450,54 @@ const CertificateEditor = ({
 						>
 							<Keyboard className="h-4 w-4" />
 						</Button>
-					)}
 
-					<Button
-						variant="outline"
-						size="sm"
-						className="gap-2"
-						disabled={!hasTemplate || isPreviewing}
-						onClick={handlePreviewClick}
-					>
-						{isPreviewing ? (
-							<Loader2 className="h-4 w-4 animate-spin" />
-						) : (
-							<Eye className="h-4 w-4" />
-						)}
-						Preview
-					</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							className="gap-2"
+							disabled={!hasTemplate || isPreviewing}
+							onClick={handlePreviewClick}
+						>
+							{isPreviewing ? (
+								<Loader2 className="h-4 w-4 animate-spin" />
+							) : (
+								<Eye className="h-4 w-4" />
+							)}
+							Preview
+						</Button>
 
-					<Button
-						size="sm"
-						className="gap-2"
-						disabled={!hasTemplate || isGenerating}
-						onClick={handleGenerateClick}
-					>
-						{isGenerating ? (
-							<Loader2 className="h-4 w-4 animate-spin" />
-						) : (
-							<Download className="h-4 w-4" />
-						)}
-						Generate
-					</Button>
+						<Button
+							size="sm"
+							className="gap-2"
+							disabled={!hasTemplate || isGenerating}
+							onClick={handleGenerateClick}
+						>
+							{isGenerating ? (
+								<Loader2 className="h-4 w-4 animate-spin" />
+							) : (
+								<Download className="h-4 w-4" />
+							)}
+							Generate
+						</Button>
 
-					<Button
-						variant="secondary"
-						size="sm"
-						className="gap-2"
-						disabled={!hasTemplate}
-						onClick={handleShareClick}
-						data-tour="share-button"
-					>
-						<Share2 className="h-4 w-4" />
-						Share
-						{recipients.length > 0 && (
-							<span className="ml-0.5 rounded-full bg-primary/15 px-1.5 text-xs font-medium text-primary">
-								{recipients.length}
-							</span>
-						)}
-					</Button>
-				</div>
+						<Button
+							variant="secondary"
+							size="sm"
+							className="gap-2"
+							disabled={!hasTemplate}
+							onClick={handleShareClick}
+							data-tour="share-button"
+						>
+							<Share2 className="h-4 w-4" />
+							Share
+							{recipients.length > 0 && (
+								<span className="ml-0.5 rounded-full bg-primary/15 px-1.5 text-xs font-medium text-primary">
+									{recipients.length}
+								</span>
+							)}
+						</Button>
+					</div>
+				)}
 			</div>
 
 			<main className="flex-1 min-h-0 overflow-hidden flex">
@@ -596,8 +603,58 @@ const CertificateEditor = ({
 						</div>
 					</ScrollArea>
 
+					{isMobile && (
+						<div className="flex shrink-0 items-center gap-2 border-t border-border px-4 py-3">
+							<Button
+								variant="outline"
+								size="sm"
+								className="flex-1 gap-2"
+								disabled={!hasTemplate || isPreviewing}
+								onClick={handlePreviewClick}
+							>
+								{isPreviewing ? (
+									<Loader2 className="h-4 w-4 animate-spin" />
+								) : (
+									<Eye className="h-4 w-4" />
+								)}
+								Preview
+							</Button>
+
+							<Button
+								size="sm"
+								className="flex-1 gap-2"
+								disabled={!hasTemplate || isGenerating}
+								onClick={handleGenerateClick}
+							>
+								{isGenerating ? (
+									<Loader2 className="h-4 w-4 animate-spin" />
+								) : (
+									<Download className="h-4 w-4" />
+								)}
+								Generate
+							</Button>
+
+							<Button
+								variant="secondary"
+								size="sm"
+								className="flex-1 gap-2"
+								disabled={!hasTemplate}
+								onClick={handleShareClick}
+								data-tour="share-button"
+							>
+								<Share2 className="h-4 w-4" />
+								Share
+								{recipients.length > 0 && (
+									<span className="ml-0.5 rounded-full bg-primary/15 px-1.5 text-xs font-medium text-primary">
+										{recipients.length}
+									</span>
+								)}
+							</Button>
+						</div>
+					)}
+
 					{hasTemplate && (
-						<p className="text-center text-xs text-muted-foreground pb-3 shrink-0">
+						<p className="text-center text-xs text-muted-foreground pb-3 pt-2 shrink-0">
 							{isMobile
 								? "Tap a field to select it, drag to reposition, or tap again to edit"
 								: "Drag the text to reposition · arrow keys to nudge (hold Shift for bigger steps)"}
@@ -876,8 +933,6 @@ const CertificateEditor = ({
 				isPrimaryField={mobileMenuField?.id === fields[0]?.id}
 				onUploadSignature={handleSignatureUpload}
 			/>
-
-			{isSimple && <EditorAuthFooter />}
 		</div>
 	);
 };

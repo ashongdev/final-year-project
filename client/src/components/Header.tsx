@@ -16,6 +16,7 @@ import {
 	ChevronDown,
 	Laptop,
 	LayoutDashboard,
+	LogIn,
 	LogOut,
 	Moon,
 	Settings,
@@ -73,13 +74,23 @@ const Header = ({ onTourClick }: HeaderProps) => {
 
 	const controls = (
 		<>
-			{isAuthenticated && (
+			{isAuthenticated ? (
 				<button
 					onClick={() => navigate("/dashboard")}
-					className="flex items-center gap-1.5 border-2 border-foreground bg-secondary px-3.5 py-1.5 text-xs font-bold uppercase tracking-widest text-secondary-foreground shadow-[3px_3px_0_hsl(var(--foreground))] transition-all hover:-translate-y-0.5"
+					title="Dashboard"
+					className="flex items-center gap-1.5 border-2 border-foreground bg-secondary px-2.5 py-1.5 text-xs font-bold uppercase tracking-widest text-secondary-foreground shadow-[3px_3px_0_hsl(var(--foreground))] transition-all hover:-translate-y-0.5 sm:px-3.5"
 				>
 					<LayoutDashboard className="h-3.5 w-3.5" />
-					Dashboard
+					<span className="hidden sm:inline">Dashboard</span>
+				</button>
+			) : (
+				<button
+					onClick={() => navigate("/login")}
+					title="Login"
+					className="flex items-center gap-1.5 border-2 border-foreground bg-primary px-2.5 py-1.5 text-xs font-bold uppercase tracking-widest text-primary-foreground shadow-[3px_3px_0_hsl(var(--foreground))] transition-all hover:-translate-y-0.5 sm:px-3.5"
+				>
+					<LogIn className="h-3.5 w-3.5" />
+					<span className="hidden sm:inline">Login</span>
 				</button>
 			)}
 
@@ -224,7 +235,7 @@ const Header = ({ onTourClick }: HeaderProps) => {
 								</span>
 							</Link>
 
-							<div className="flex items-center gap-3">{controls}</div>
+							<div className="flex flex-wrap items-center gap-3">{controls}</div>
 						</div>
 					</motion.div>
 				)}

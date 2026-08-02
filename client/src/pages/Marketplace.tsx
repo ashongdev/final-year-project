@@ -1,5 +1,4 @@
 import CertificatePreview from "@/components/CertificatePreview";
-import EditorAuthFooter from "@/components/EditorAuthFooter";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import {
@@ -257,8 +256,6 @@ const Marketplace = () => {
 					)}
 				</DialogContent>
 			</Dialog>
-
-			<EditorAuthFooter />
 		</div>
 	);
 };
