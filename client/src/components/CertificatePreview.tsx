@@ -319,7 +319,15 @@ const CertificatePreview = ({
 						ref={imgRef}
 						src={templateUrl}
 						alt="Certificate Template"
-						className="w-full h-full object-contain"
+						// absolute + inset-0 rather than w-full/h-full: a
+						// percentage-height child of a parent sized via CSS
+						// aspect-ratio (not an explicit height) is a known
+						// WebKit bug on iOS Safari, where the child's height
+						// resolves against a stale/zero value and the image
+						// renders cropped. Absolute positioning against the
+						// (already relative) parent isn't subject to that
+						// percentage-height resolution path.
+						className="absolute inset-0 h-full w-full object-contain"
 						draggable={false}
 					/>
 
