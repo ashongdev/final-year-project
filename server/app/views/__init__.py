@@ -1,6 +1,7 @@
 import logging
 import os
 from io import BytesIO
+from urllib.parse import urlparse
 
 import cloudinary
 import cloudinary.api
@@ -59,8 +60,30 @@ cloudinary.config(
 
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
-    callback_url = os.getenv("CALLBACK_URL")
     client_class = OAuth2Client
+
+    def post(self, request, *args, **kwargs):
+        # Frontend computes redirect_uri from its own current origin (see
+        # client/src/lib/googleAuth.ts) so it works unchanged on localhost, a
+        # LAN IP, or any deployed domain without editing CALLBACK_URL every
+        # time. Setting it as an instance attribute here overrides the class
+        # default that dj_rest_auth's serializer reads via
+        # getattr(view, "callback_url", None) — see
+        # SocialLoginSerializer.set_callback_url. Validated against
+        # CORS_ALLOWED_ORIGINS (already the maintained list of trusted
+        # frontend origins) as defense-in-depth; Google's own registered
+        # redirect-URI whitelist is the actual security boundary, since this
+        # value is only ever forwarded as a form field to Google's token
+        # endpoint, never used to build an outbound request itself.
+        redirect_uri = (request.data.get("redirect_uri") or "").strip()
+        parsed = urlparse(redirect_uri)
+        origin = f"{parsed.scheme}://{parsed.netloc}"
+        allowed = (
+            redirect_uri.endswith("/auth/google/callback")
+            and origin in settings.CORS_ALLOWED_ORIGINS
+        )
+        self.callback_url = redirect_uri if allowed else os.getenv("CALLBACK_URL")
+        return super().post(request, *args, **kwargs)
 
 
 @api_view(["GET"])

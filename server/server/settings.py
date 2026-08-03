@@ -149,6 +149,16 @@ SESSION_COOKIE_SECURE = _is_production
 CSRF_COOKIE_SECURE = _is_production
 SESSION_COOKIE_HTTPONLY = True
 
+# Unset by default (host-only cookie, current behavior). Set to a shared
+# parent domain (e.g. ".ashong.dev") once frontend and backend both live on
+# subdomains of it, so the session cookie is same-site rather than
+# cross-site — WebKit (Safari, and every iOS browser since Apple mandates
+# it) blocks cross-site cookies set via background XHR/fetch by default,
+# which otherwise silently drops the session right after Google login.
+COOKIE_DOMAIN = getenv("COOKIE_DOMAIN") or None
+SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
+CSRF_COOKIE_DOMAIN = COOKIE_DOMAIN
+
 CSRF_TRUSTED_ORIGINS = [
     o.strip()
     for o in getenv(

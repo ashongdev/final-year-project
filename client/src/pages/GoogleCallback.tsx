@@ -1,4 +1,5 @@
 import { useAuthContext } from "@/hooks/useAuthContext";
+import { getGoogleRedirectUri } from "@/lib/googleAuth";
 import { restorePendingSession } from "@/lib/pendingSession";
 import { consumePostLoginRedirect } from "@/lib/postLoginRedirect";
 import api, { primeCsrfToken } from "@/services/axios";
@@ -22,7 +23,7 @@ const GoogleCallback = () => {
 
 		const response = await api.post(
 			`${BASE_URL}/auth/google/`,
-			{ code },
+			{ code, redirect_uri: getGoogleRedirectUri() },
 			{
 				headers: { "Content-Type": "application/json" },
 			},
