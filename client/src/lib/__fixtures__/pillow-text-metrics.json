@@ -1,0 +1,773 @@
+{
+  "referenceSize": 1000,
+  "results": [
+    {
+      "font": "Bickham Script Pro Regular",
+      "label": "lowercase",
+      "text": "hello world",
+      "ascent": 680,
+      "descent": 320,
+      "advanceWidth": 2605.0
+    },
+    {
+      "font": "Bickham Script Pro Regular",
+      "label": "uppercase",
+      "text": "HELLO WORLD",
+      "ascent": 680,
+      "descent": 320,
+      "advanceWidth": 5737.0
+    },
+    {
+      "font": "Bickham Script Pro Regular",
+      "label": "mixed_ascender_descender",
+      "text": "John Micheal Doe",
+      "ascent": 680,
+      "descent": 320,
+      "advanceWidth": 4883.0
+    },
+    {
+      "font": "Bickham Script Pro Regular",
+      "label": "accented",
+      "text": "Jose Garcia Munoz",
+      "ascent": 680,
+      "descent": 320,
+      "advanceWidth": 4932.0
+    },
+    {
+      "font": "Bickham Script Pro Regular",
+      "label": "punctuation_only",
+      "text": "------------------",
+      "ascent": 680,
+      "descent": 320,
+      "advanceWidth": 4410.0
+    },
+    {
+      "font": "Bickham Script Pro Regular",
+      "label": "descenders_only",
+      "text": "gjpqy",
+      "ascent": 680,
+      "descent": 320,
+      "advanceWidth": 1366.0
+    },
+    {
+      "font": "Bickham Script Pro Regular",
+      "label": "ascenders_only",
+      "text": "bdfhkl",
+      "ascent": 680,
+      "descent": 320,
+      "advanceWidth": 1553.0
+    },
+    {
+      "font": "Bickham Script Pro Regular",
+      "label": "no_ascender_descender",
+      "text": "aceimnorsuvwxz",
+      "ascent": 680,
+      "descent": 320,
+      "advanceWidth": 3998.0
+    },
+    {
+      "font": "Great Vibes",
+      "label": "lowercase",
+      "text": "hello world",
+      "ascent": 851,
+      "descent": 401,
+      "advanceWidth": 3246.0
+    },
+    {
+      "font": "Great Vibes",
+      "label": "uppercase",
+      "text": "HELLO WORLD",
+      "ascent": 851,
+      "descent": 401,
+      "advanceWidth": 9425.0
+    },
+    {
+      "font": "Great Vibes",
+      "label": "mixed_ascender_descender",
+      "text": "John Micheal Doe",
+      "ascent": 851,
+      "descent": 401,
+      "advanceWidth": 6984.0
+    },
+    {
+      "font": "Great Vibes",
+      "label": "accented",
+      "text": "Jose Garcia Munoz",
+      "ascent": 851,
+      "descent": 401,
+      "advanceWidth": 7111.0
+    },
+    {
+      "font": "Great Vibes",
+      "label": "punctuation_only",
+      "text": "------------------",
+      "ascent": 851,
+      "descent": 401,
+      "advanceWidth": 7308.0
+    },
+    {
+      "font": "Great Vibes",
+      "label": "descenders_only",
+      "text": "gjpqy",
+      "ascent": 851,
+      "descent": 401,
+      "advanceWidth": 1646.0
+    },
+    {
+      "font": "Great Vibes",
+      "label": "ascenders_only",
+      "text": "bdfhkl",
+      "ascent": 851,
+      "descent": 401,
+      "advanceWidth": 1817.0
+    },
+    {
+      "font": "Great Vibes",
+      "label": "no_ascender_descender",
+      "text": "aceimnorsuvwxz",
+      "ascent": 851,
+      "descent": 401,
+      "advanceWidth": 4492.0
+    },
+    {
+      "font": "Alex Brush",
+      "label": "lowercase",
+      "text": "hello world",
+      "ascent": 825,
+      "descent": 425,
+      "advanceWidth": 3432.0
+    },
+    {
+      "font": "Alex Brush",
+      "label": "uppercase",
+      "text": "HELLO WORLD",
+      "ascent": 825,
+      "descent": 425,
+      "advanceWidth": 8190.0
+    },
+    {
+      "font": "Alex Brush",
+      "label": "mixed_ascender_descender",
+      "text": "John Micheal Doe",
+      "ascent": 825,
+      "descent": 425,
+      "advanceWidth": 6670.0
+    },
+    {
+      "font": "Alex Brush",
+      "label": "accented",
+      "text": "Jose Garcia Munoz",
+      "ascent": 825,
+      "descent": 425,
+      "advanceWidth": 7301.0
+    },
+    {
+      "font": "Alex Brush",
+      "label": "punctuation_only",
+      "text": "------------------",
+      "ascent": 825,
+      "descent": 425,
+      "advanceWidth": 5346.0
+    },
+    {
+      "font": "Alex Brush",
+      "label": "descenders_only",
+      "text": "gjpqy",
+      "ascent": 825,
+      "descent": 425,
+      "advanceWidth": 1650.0
+    },
+    {
+      "font": "Alex Brush",
+      "label": "ascenders_only",
+      "text": "bdfhkl",
+      "ascent": 825,
+      "descent": 425,
+      "advanceWidth": 2087.0
+    },
+    {
+      "font": "Alex Brush",
+      "label": "no_ascender_descender",
+      "text": "aceimnorsuvwxz",
+      "ascent": 825,
+      "descent": 425,
+      "advanceWidth": 5234.0
+    },
+    {
+      "font": "Snell Roundhand",
+      "label": "lowercase",
+      "text": "hello world",
+      "ascent": 937,
+      "descent": 324,
+      "advanceWidth": 4955.0
+    },
+    {
+      "font": "Snell Roundhand",
+      "label": "uppercase",
+      "text": "HELLO WORLD",
+      "ascent": 937,
+      "descent": 324,
+      "advanceWidth": 8491.0
+    },
+    {
+      "font": "Snell Roundhand",
+      "label": "mixed_ascender_descender",
+      "text": "John Micheal Doe",
+      "ascent": 937,
+      "descent": 324,
+      "advanceWidth": 8371.0
+    },
+    {
+      "font": "Snell Roundhand",
+      "label": "accented",
+      "text": "Jose Garcia Munoz",
+      "ascent": 937,
+      "descent": 324,
+      "advanceWidth": 8741.0
+    },
+    {
+      "font": "Snell Roundhand",
+      "label": "punctuation_only",
+      "text": "------------------",
+      "ascent": 937,
+      "descent": 324,
+      "advanceWidth": 7326.0
+    },
+    {
+      "font": "Snell Roundhand",
+      "label": "descenders_only",
+      "text": "gjpqy",
+      "ascent": 937,
+      "descent": 324,
+      "advanceWidth": 2426.0
+    },
+    {
+      "font": "Snell Roundhand",
+      "label": "ascenders_only",
+      "text": "bdfhkl",
+      "ascent": 937,
+      "descent": 324,
+      "advanceWidth": 2723.0
+    },
+    {
+      "font": "Snell Roundhand",
+      "label": "no_ascender_descender",
+      "text": "aceimnorsuvwxz",
+      "ascent": 937,
+      "descent": 324,
+      "advanceWidth": 7297.0
+    },
+    {
+      "font": "Kunstler Script",
+      "label": "lowercase",
+      "text": "hello world",
+      "ascent": 827,
+      "descent": 268,
+      "advanceWidth": 2791.0
+    },
+    {
+      "font": "Kunstler Script",
+      "label": "uppercase",
+      "text": "HELLO WORLD",
+      "ascent": 827,
+      "descent": 268,
+      "advanceWidth": 8033.0
+    },
+    {
+      "font": "Kunstler Script",
+      "label": "mixed_ascender_descender",
+      "text": "John Micheal Doe",
+      "ascent": 827,
+      "descent": 268,
+      "advanceWidth": 5326.0
+    },
+    {
+      "font": "Kunstler Script",
+      "label": "accented",
+      "text": "Jose Garcia Munoz",
+      "ascent": 827,
+      "descent": 268,
+      "advanceWidth": 5585.0
+    },
+    {
+      "font": "Kunstler Script",
+      "label": "punctuation_only",
+      "text": "------------------",
+      "ascent": 827,
+      "descent": 268,
+      "advanceWidth": 2376.0
+    },
+    {
+      "font": "Kunstler Script",
+      "label": "descenders_only",
+      "text": "gjpqy",
+      "ascent": 827,
+      "descent": 268,
+      "advanceWidth": 1498.0
+    },
+    {
+      "font": "Kunstler Script",
+      "label": "ascenders_only",
+      "text": "bdfhkl",
+      "ascent": 827,
+      "descent": 268,
+      "advanceWidth": 1698.0
+    },
+    {
+      "font": "Kunstler Script",
+      "label": "no_ascender_descender",
+      "text": "aceimnorsuvwxz",
+      "ascent": 827,
+      "descent": 268,
+      "advanceWidth": 4101.0
+    },
+    {
+      "font": "Montserrat",
+      "label": "lowercase",
+      "text": "hello world",
+      "ascent": 968,
+      "descent": 251,
+      "advanceWidth": 6127.0
+    },
+    {
+      "font": "Montserrat",
+      "label": "uppercase",
+      "text": "HELLO WORLD",
+      "ascent": 968,
+      "descent": 251,
+      "advanceWidth": 8101.0
+    },
+    {
+      "font": "Montserrat",
+      "label": "mixed_ascender_descender",
+      "text": "John Micheal Doe",
+      "ascent": 968,
+      "descent": 251,
+      "advanceWidth": 9628.0
+    },
+    {
+      "font": "Montserrat",
+      "label": "accented",
+      "text": "Jose Garcia Munoz",
+      "ascent": 968,
+      "descent": 251,
+      "advanceWidth": 10116.0
+    },
+    {
+      "font": "Montserrat",
+      "label": "punctuation_only",
+      "text": "------------------",
+      "ascent": 968,
+      "descent": 251,
+      "advanceWidth": 7020.0
+    },
+    {
+      "font": "Montserrat",
+      "label": "descenders_only",
+      "text": "gjpqy",
+      "ascent": 968,
+      "descent": 251,
+      "advanceWidth": 3089.0
+    },
+    {
+      "font": "Montserrat",
+      "label": "ascenders_only",
+      "text": "bdfhkl",
+      "ascent": 968,
+      "descent": 251,
+      "advanceWidth": 3572.0
+    },
+    {
+      "font": "Montserrat",
+      "label": "no_ascender_descender",
+      "text": "aceimnorsuvwxz",
+      "ascent": 968,
+      "descent": 251,
+      "advanceWidth": 9208.0
+    },
+    {
+      "font": "Inter",
+      "label": "lowercase",
+      "text": "hello world",
+      "ascent": 962,
+      "descent": 235,
+      "advanceWidth": 5567.0
+    },
+    {
+      "font": "Inter",
+      "label": "uppercase",
+      "text": "HELLO WORLD",
+      "ascent": 962,
+      "descent": 235,
+      "advanceWidth": 7369.0
+    },
+    {
+      "font": "Inter",
+      "label": "mixed_ascender_descender",
+      "text": "John Micheal Doe",
+      "ascent": 962,
+      "descent": 235,
+      "advanceWidth": 8843.0
+    },
+    {
+      "font": "Inter",
+      "label": "accented",
+      "text": "Jose Garcia Munoz",
+      "ascent": 962,
+      "descent": 235,
+      "advanceWidth": 9567.0
+    },
+    {
+      "font": "Inter",
+      "label": "punctuation_only",
+      "text": "------------------",
+      "ascent": 962,
+      "descent": 235,
+      "advanceWidth": 8532.0
+    },
+    {
+      "font": "Inter",
+      "label": "descenders_only",
+      "text": "gjpqy",
+      "ascent": 962,
+      "descent": 235,
+      "advanceWidth": 2845.0
+    },
+    {
+      "font": "Inter",
+      "label": "ascenders_only",
+      "text": "bdfhkl",
+      "ascent": 962,
+      "descent": 235,
+      "advanceWidth": 3249.0
+    },
+    {
+      "font": "Inter",
+      "label": "no_ascender_descender",
+      "text": "aceimnorsuvwxz",
+      "ascent": 962,
+      "descent": 235,
+      "advanceWidth": 8677.0
+    },
+    {
+      "font": "Georgia",
+      "label": "lowercase",
+      "text": "hello world",
+      "ascent": 917,
+      "descent": 220,
+      "advanceWidth": 4963.0
+    },
+    {
+      "font": "Georgia",
+      "label": "uppercase",
+      "text": "HELLO WORLD",
+      "ascent": 917,
+      "descent": 220,
+      "advanceWidth": 7436.0
+    },
+    {
+      "font": "Georgia",
+      "label": "mixed_ascender_descender",
+      "text": "John Micheal Doe",
+      "ascent": 917,
+      "descent": 220,
+      "advanceWidth": 8012.0
+    },
+    {
+      "font": "Georgia",
+      "label": "accented",
+      "text": "Jose Garcia Munoz",
+      "ascent": 917,
+      "descent": 220,
+      "advanceWidth": 8420.0
+    },
+    {
+      "font": "Georgia",
+      "label": "punctuation_only",
+      "text": "------------------",
+      "ascent": 917,
+      "descent": 220,
+      "advanceWidth": 6732.0
+    },
+    {
+      "font": "Georgia",
+      "label": "descenders_only",
+      "text": "gjpqy",
+      "ascent": 917,
+      "descent": 220,
+      "advanceWidth": 2424.0
+    },
+    {
+      "font": "Georgia",
+      "label": "ascenders_only",
+      "text": "bdfhkl",
+      "ascent": 917,
+      "descent": 220,
+      "advanceWidth": 2863.0
+    },
+    {
+      "font": "Georgia",
+      "label": "no_ascender_descender",
+      "text": "aceimnorsuvwxz",
+      "ascent": 917,
+      "descent": 220,
+      "advanceWidth": 7345.0
+    },
+    {
+      "font": "Times New Roman",
+      "label": "lowercase",
+      "text": "hello world",
+      "ascent": 892,
+      "descent": 217,
+      "advanceWidth": 4583.0
+    },
+    {
+      "font": "Times New Roman",
+      "label": "uppercase",
+      "text": "HELLO WORLD",
+      "ascent": 892,
+      "descent": 217,
+      "advanceWidth": 7192.71875
+    },
+    {
+      "font": "Times New Roman",
+      "label": "mixed_ascender_descender",
+      "text": "John Micheal Doe",
+      "ascent": 892,
+      "descent": 217,
+      "advanceWidth": 7332.0
+    },
+    {
+      "font": "Times New Roman",
+      "label": "accented",
+      "text": "Jose Garcia Munoz",
+      "ascent": 892,
+      "descent": 217,
+      "advanceWidth": 7720.0
+    },
+    {
+      "font": "Times New Roman",
+      "label": "punctuation_only",
+      "text": "------------------",
+      "ascent": 892,
+      "descent": 217,
+      "advanceWidth": 5994.0
+    },
+    {
+      "font": "Times New Roman",
+      "label": "descenders_only",
+      "text": "gjpqy",
+      "ascent": 892,
+      "descent": 217,
+      "advanceWidth": 2278.0
+    },
+    {
+      "font": "Times New Roman",
+      "label": "ascenders_only",
+      "text": "bdfhkl",
+      "ascent": 892,
+      "descent": 217,
+      "advanceWidth": 2611.0
+    },
+    {
+      "font": "Times New Roman",
+      "label": "no_ascender_descender",
+      "text": "aceimnorsuvwxz",
+      "ascent": 892,
+      "descent": 217,
+      "advanceWidth": 6776.0
+    },
+    {
+      "font": "Garamond",
+      "label": "lowercase",
+      "text": "hello world",
+      "ascent": 862,
+      "descent": 264,
+      "advanceWidth": 4384.609375
+    },
+    {
+      "font": "Garamond",
+      "label": "uppercase",
+      "text": "HELLO WORLD",
+      "ascent": 862,
+      "descent": 264,
+      "advanceWidth": 7227.703125
+    },
+    {
+      "font": "Garamond",
+      "label": "mixed_ascender_descender",
+      "text": "John Micheal Doe",
+      "ascent": 862,
+      "descent": 264,
+      "advanceWidth": 7103.3125
+    },
+    {
+      "font": "Garamond",
+      "label": "accented",
+      "text": "Jose Garcia Munoz",
+      "ascent": 862,
+      "descent": 264,
+      "advanceWidth": 7459.515625
+    },
+    {
+      "font": "Garamond",
+      "label": "punctuation_only",
+      "text": "------------------",
+      "ascent": 862,
+      "descent": 264,
+      "advanceWidth": 5634.0
+    },
+    {
+      "font": "Garamond",
+      "label": "descenders_only",
+      "text": "gjpqy",
+      "ascent": 862,
+      "descent": 264,
+      "advanceWidth": 2094.0
+    },
+    {
+      "font": "Garamond",
+      "label": "ascenders_only",
+      "text": "bdfhkl",
+      "ascent": 862,
+      "descent": 264,
+      "advanceWidth": 2541.0
+    },
+    {
+      "font": "Garamond",
+      "label": "no_ascender_descender",
+      "text": "aceimnorsuvwxz",
+      "ascent": 862,
+      "descent": 264,
+      "advanceWidth": 6471.0
+    },
+    {
+      "font": "Cinzel",
+      "label": "lowercase",
+      "text": "hello world",
+      "ascent": 976,
+      "descent": 372,
+      "advanceWidth": 6984.0
+    },
+    {
+      "font": "Cinzel",
+      "label": "uppercase",
+      "text": "HELLO WORLD",
+      "ascent": 976,
+      "descent": 372,
+      "advanceWidth": 7468.0
+    },
+    {
+      "font": "Cinzel",
+      "label": "mixed_ascender_descender",
+      "text": "John Micheal Doe",
+      "ascent": 976,
+      "descent": 372,
+      "advanceWidth": 9713.0
+    },
+    {
+      "font": "Cinzel",
+      "label": "accented",
+      "text": "Jose Garcia Munoz",
+      "ascent": 976,
+      "descent": 372,
+      "advanceWidth": 10190.0
+    },
+    {
+      "font": "Cinzel",
+      "label": "punctuation_only",
+      "text": "------------------",
+      "ascent": 976,
+      "descent": 372,
+      "advanceWidth": 6840.0
+    },
+    {
+      "font": "Cinzel",
+      "label": "descenders_only",
+      "text": "gjpqy",
+      "ascent": 976,
+      "descent": 372,
+      "advanceWidth": 3021.0
+    },
+    {
+      "font": "Cinzel",
+      "label": "ascenders_only",
+      "text": "bdfhkl",
+      "ascent": 976,
+      "descent": 372,
+      "advanceWidth": 3759.0
+    },
+    {
+      "font": "Cinzel",
+      "label": "no_ascender_descender",
+      "text": "aceimnorsuvwxz",
+      "ascent": 976,
+      "descent": 372,
+      "advanceWidth": 9266.0
+    },
+    {
+      "font": "Playfair Display",
+      "label": "lowercase",
+      "text": "hello world",
+      "ascent": 1083,
+      "descent": 251,
+      "advanceWidth": 5093.0
+    },
+    {
+      "font": "Playfair Display",
+      "label": "uppercase",
+      "text": "HELLO WORLD",
+      "ascent": 1083,
+      "descent": 251,
+      "advanceWidth": 7137.0
+    },
+    {
+      "font": "Playfair Display",
+      "label": "mixed_ascender_descender",
+      "text": "John Micheal Doe",
+      "ascent": 1083,
+      "descent": 251,
+      "advanceWidth": 7862.0
+    },
+    {
+      "font": "Playfair Display",
+      "label": "accented",
+      "text": "Jose Garcia Munoz",
+      "ascent": 1083,
+      "descent": 251,
+      "advanceWidth": 8320.0
+    },
+    {
+      "font": "Playfair Display",
+      "label": "punctuation_only",
+      "text": "------------------",
+      "ascent": 1083,
+      "descent": 251,
+      "advanceWidth": 8982.0
+    },
+    {
+      "font": "Playfair Display",
+      "label": "descenders_only",
+      "text": "gjpqy",
+      "ascent": 1083,
+      "descent": 251,
+      "advanceWidth": 2433.0
+    },
+    {
+      "font": "Playfair Display",
+      "label": "ascenders_only",
+      "text": "bdfhkl",
+      "ascent": 1083,
+      "descent": 251,
+      "advanceWidth": 2900.0
+    },
+    {
+      "font": "Playfair Display",
+      "label": "no_ascender_descender",
+      "text": "aceimnorsuvwxz",
+      "ascent": 1083,
+      "descent": 251,
+      "advanceWidth": 7542.0
+    }
+  ]
+}
