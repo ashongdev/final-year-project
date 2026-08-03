@@ -22,6 +22,15 @@ interface UseTemplateManagerProps {
 	recipients: Recipient[];
 	customPublicId: string;
 	isPublishing: boolean;
+	/**
+	 * Seeds uploadedPublicId when the caller already knows this template's
+	 * id (e.g. loaded via ?id=, or carried through a Simple<->Advanced
+	 * mode switch) — without this, a template that's already been saved
+	 * looks brand new to a freshly-mounted editor instance, and a
+	 * subsequent silent upload creates a duplicate Templates row instead
+	 * of overwriting the existing one.
+	 */
+	initialUploadedPublicId?: string | null;
 	setTemplateFile: React.Dispatch<React.SetStateAction<File | null>>;
 	setTemplateUrl: React.Dispatch<React.SetStateAction<string | null>>;
 	setCustomPublicId: React.Dispatch<React.SetStateAction<string>>;
@@ -46,6 +55,7 @@ const useTemplateManager = ({
 	recipients,
 	customPublicId,
 	isPublishing,
+	initialUploadedPublicId = null,
 	setTemplateFile,
 	setTemplateUrl,
 	setCustomPublicId,
@@ -60,7 +70,7 @@ const useTemplateManager = ({
 	// uploads/publishes overwrite that same asset instead of creating a
 	// duplicate. Reset whenever a fresh template is picked from scratch.
 	const [uploadedPublicId, setUploadedPublicId] = useState<string | null>(
-		null,
+		initialUploadedPublicId,
 	);
 
 	// Revoke local blob URLs to avoid memory leaks

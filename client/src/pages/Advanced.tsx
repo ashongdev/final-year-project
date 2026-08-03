@@ -9,6 +9,7 @@ const Advanced = () => {
 		fields?: TextField[];
 		templateFile?: File;
 		templateUrl?: string;
+		uploadedPublicId?: string | null;
 	} | null;
 
 	return (
@@ -19,6 +20,7 @@ const Advanced = () => {
 			initialFields={state?.fields}
 			initialTemplateFile={state?.templateFile ?? null}
 			initialTemplateUrl={state?.templateUrl ?? null}
+			initialUploadedPublicId={state?.uploadedPublicId ?? null}
 		/>
 	);
 };

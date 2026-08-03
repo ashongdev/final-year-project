@@ -11,6 +11,7 @@ const Editor = () => {
 		templateUrl?: string;
 		recipients?: Recipient[];
 		templateUseMode?: "testing" | "actual";
+		uploadedPublicId?: string | null;
 	} | null;
 
 	return (
@@ -23,6 +24,7 @@ const Editor = () => {
 			initialTemplateUrl={state?.templateUrl ?? null}
 			initialRecipients={state?.recipients ?? []}
 			templateUseMode={state?.templateUseMode}
+			initialUploadedPublicId={state?.uploadedPublicId ?? null}
 		/>
 	);
 };

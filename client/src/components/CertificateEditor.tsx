@@ -78,6 +78,8 @@ interface CertificateEditorProps {
 	initialTemplateUrl?: string | null;
 	initialRecipients?: Recipient[];
 	templateUseMode?: "testing" | "actual";
+	/** See useTemplateManager's initialUploadedPublicId. */
+	initialUploadedPublicId?: string | null;
 }
 
 const CertificateEditor = ({
@@ -89,6 +91,7 @@ const CertificateEditor = ({
 	initialTemplateUrl = null,
 	initialRecipients = [],
 	templateUseMode,
+	initialUploadedPublicId = null,
 }: CertificateEditorProps) => {
 	const navigate = useNavigate();
 	const [searchParams, setSearchParams] = useSearchParams();
@@ -119,12 +122,16 @@ const CertificateEditor = ({
 		null,
 	);
 	// The editor canvas's background "show the real render while idle"
-	// layer — see handleLiveRender/GenerateThrottle. Fresh only while
-	// nothing has changed since it was fetched; any edit invalidates it
-	// immediately and CertificatePreview falls back to its fast
-	// approximate live view until the next debounce settles.
+	// layer — see handleLiveRender/GenerateThrottle. CertificatePreview
+	// compares bakedFields (below) against the live fields per-field, so a
+	// field with no pending changes keeps showing this even while a
+	// different field is being edited.
 	const [liveRenderUrl, setLiveRenderUrl] = useState<string | null>(null);
-	const [liveRenderFresh, setLiveRenderFresh] = useState(false);
+	// Exactly which fields (and their state) liveRenderUrl was generated
+	// from — lets CertificatePreview show the accurate render per-field
+	// instead of all-or-nothing, so editing one field doesn't visibly
+	// "re-render" every other field that hasn't actually changed.
+	const [bakedFields, setBakedFields] = useState<TextField[]>([]);
 	const [mobileMenuFieldId, setMobileMenuFieldId] = useState<string | null>(
 		null,
 	);
@@ -174,6 +181,7 @@ const CertificateEditor = ({
 		recipients,
 		customPublicId,
 		isPublishing,
+		initialUploadedPublicId,
 		setTemplateFile,
 		setTemplateUrl,
 		setCustomPublicId,
@@ -194,7 +202,16 @@ const CertificateEditor = ({
 	// file this component mounted with, so it can never fire again for a
 	// later, separate manual selection — handleFileSelect already uploads
 	// that directly, and racing both on the same file would double-upload.
-	const pendingSilentUploadRef = useRef(initialTemplateFile);
+	//
+	// Skipped entirely when initialUploadedPublicId is already known (e.g.
+	// a mode switch, which does carry the file itself through — used
+	// directly for editor state — but not this): that file was already
+	// uploaded once under that id, and re-uploading it here with no id to
+	// overwrite in place would create a second, duplicate Templates row
+	// instead of just... already being saved.
+	const pendingSilentUploadRef = useRef(
+		initialUploadedPublicId ? null : initialTemplateFile,
+	);
 	useEffect(() => {
 		if (!isAuthenticated || !pendingSilentUploadRef.current) return;
 		const file = pendingSilentUploadRef.current;
@@ -215,22 +232,19 @@ const CertificateEditor = ({
 		armed: isSimple && !isAuthenticated && hasTemplate,
 	});
 
-	// Keeps the canvas showing the actual backend-rendered certificate
-	// whenever nothing has changed for a moment, instead of only the fast
-	// approximate live overlay CertificatePreview draws while editing.
-	// Marking it stale immediately (before the timer even starts) means any
-	// edit — including continuous ones like a drag or a slider — falls back
-	// to the approximate view right away and only shows the real render once
-	// things are actually idle again.
+	// Keeps the canvas showing the actual backend-rendered certificate for
+	// any field with no pending changes, instead of only the fast
+	// approximate live overlay CertificatePreview draws while editing —
+	// bakedFields (set alongside liveRenderUrl below) is what lets it do
+	// that per field rather than all-or-nothing.
 	useEffect(() => {
-		setLiveRenderFresh(false);
 		if (!hasTemplate) return;
 
 		const timer = setTimeout(async () => {
 			const url = await handleLiveRender();
 			if (url) {
 				setLiveRenderUrl(url);
-				setLiveRenderFresh(true);
+				setBakedFields(fields);
 			}
 			// Piggybacks on the same settle tick rather than running its own
 			// competing debounce — a no-op (returns immediately) until
@@ -555,7 +569,12 @@ const CertificateEditor = ({
 						onClick={() => {
 							if (!guardNavigation("/advanced")) return;
 							navigate("/advanced", {
-								state: { fields, templateUrl, templateFile },
+								state: {
+									fields,
+									templateUrl,
+									templateFile,
+									uploadedPublicId,
+								},
 							});
 						}}
 						title="Switch to Advanced"
@@ -574,6 +593,7 @@ const CertificateEditor = ({
 									fields: [fields[0]],
 									templateUrl,
 									templateFile,
+									uploadedPublicId,
 								},
 							})
 						}
@@ -745,7 +765,7 @@ const CertificateEditor = ({
 								isMobile={isMobile}
 								onOpenFieldMenu={handleOpenFieldMenu}
 								liveRenderUrl={liveRenderUrl}
-								liveRenderFresh={liveRenderFresh}
+								bakedFields={bakedFields}
 							/>
 						</div>
 					</ScrollArea>

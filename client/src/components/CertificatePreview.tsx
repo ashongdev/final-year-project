@@ -6,6 +6,28 @@ import { MoreVertical } from "lucide-react";
 import { RefObject, useEffect, useRef, useState } from "react";
 
 /**
+ * Whether `field`'s visible state exactly matches what was baked into the
+ * current liveRenderUrl (see `baked` below) — every property that could
+ * change what actually gets drawn, not just position. Used to decide,
+ * per field, whether it's safe to show the real backend render for that
+ * field instead of the approximate live one.
+ */
+const fieldsVisuallyMatch = (a: TextField, b: TextField): boolean =>
+	a.text === b.text &&
+	a.x === b.x &&
+	a.y === b.y &&
+	a.font === b.font &&
+	a.fontSize === b.fontSize &&
+	a.fontWeight === b.fontWeight &&
+	a.color === b.color &&
+	a.anchorMode === b.anchorMode &&
+	a.hidden === b.hidden &&
+	a.imageUrl === b.imageUrl &&
+	a.width === b.width &&
+	a.height === b.height &&
+	a.required === b.required;
+
+/**
  * Renders field text from HarfBuzz-shaped glyph outlines (see
  * lib/textShaping.ts) instead of a plain DOM text node — the browser's own
  * text-layout algorithm doesn't reliably agree with Pillow/FreeType's (see
@@ -111,14 +133,16 @@ interface CertificatePreviewProps {
 	onOpenFieldMenu?: (id: string, category?: "date" | "signature") => void;
 	/**
 	 * A recent backend-rendered PNG of the current template+fields (see
-	 * CertificateEditor's debounced handleLiveRender), shown in place of the
-	 * approximate live field overlay whenever it's confirmed to match the
-	 * current state exactly. Optional — omitted entirely outside the
-	 * organizer editor (e.g. the read-only participant view).
+	 * CertificateEditor's debounced handleLiveRender). Shown per field, in
+	 * place of that field's approximate live content, wherever bakedFields
+	 * confirms that specific field hasn't changed since this was generated
+	 * — so editing one field doesn't visibly affect any other. Optional —
+	 * both omitted entirely outside the organizer editor (e.g. the
+	 * read-only participant view).
 	 */
 	liveRenderUrl?: string | null;
-	/** True only while liveRenderUrl reflects the *current* fields/template — see CertificateEditor. */
-	liveRenderFresh?: boolean;
+	/** The fields liveRenderUrl was actually generated from — see CertificateEditor. */
+	bakedFields?: TextField[];
 }
 
 const TAP_DRAG_THRESHOLD_PX = 6;
@@ -158,7 +182,7 @@ const CertificatePreview = ({
 	isMobile = false,
 	onOpenFieldMenu,
 	liveRenderUrl = null,
-	liveRenderFresh = false,
+	bakedFields = [],
 }: CertificatePreviewProps) => {
 	const [imageScale, setImageScale] = useState({
 		scale: 1,
@@ -185,51 +209,22 @@ const CertificatePreview = ({
 	const dragStartPos = useRef<{ x: number; y: number } | null>(null);
 	const hasMovedRef = useRef(false);
 	const wasAlreadySelectedRef = useRef(false);
-	// Drives the baked-overlay grace period below — real React state (not
-	// just the hasMovedRef/draggingId refs) because it needs to trigger a
-	// re-render when a drag starts/stops.
-	const [isDragging, setIsDragging] = useState(false);
 
-	// Show the real backend render instead of each field's approximate live
-	// content only when it's confirmed current AND nothing is being actively
-	// edited — an inline text edit doesn't touch `fields` (hence doesn't
-	// invalidate liveRenderFresh) until it's committed on blur, so it needs
-	// its own check here to avoid the stale baked text showing behind the
-	// live input.
-	const bakedOverlayWanted =
-		liveRenderFresh && !!liveRenderUrl && editingFieldId === null;
-
-	// The approximate live view and the real render don't land in exactly
-	// the same spot (different rendering engines measuring text slightly
-	// differently), so swapping the instant any edit happens — even a
-	// single arrow-key nudge — reads as a jarring jump. Keeping the
-	// accurate view up for a brief grace window instead lets a quick nudge
-	// settle rather than jolt.
-	//
-	// That grace window is wrong for an active drag, though: video evidence
-	// showed it letting the stale accurate render keep fading out for up to
-	// ~750ms (grace + fade) while the field had already moved somewhere
-	// else entirely under the cursor, producing two visibly different
-	// positions on screen at once. During a real drag this hides
-	// immediately instead — no grace, no fade — since a moving field has no
-	// "settled" position to defer to yet.
-	const BAKED_OVERLAY_GRACE_MS = 250;
-	const [showBakedOverlay, setShowBakedOverlay] = useState(false);
-	useEffect(() => {
-		if (bakedOverlayWanted) {
-			setShowBakedOverlay(true);
-			return;
-		}
-		if (isDragging) {
-			setShowBakedOverlay(false);
-			return;
-		}
-		const timer = setTimeout(
-			() => setShowBakedOverlay(false),
-			BAKED_OVERLAY_GRACE_MS,
-		);
-		return () => clearTimeout(timer);
-	}, [bakedOverlayWanted, isDragging]);
+	/**
+	 * Whether `field` can show the real backend render instead of its
+	 * approximate live content — true only when we have a baked image AND
+	 * that specific field's current state exactly matches what was baked
+	 * into it (bakedFields) AND it isn't the field currently being
+	 * inline-edited (which never touches `fields`, hence wouldn't
+	 * otherwise be caught by the bakedFields comparison, until committed
+	 * on blur). Per-field rather than a single global flag, so dragging or
+	 * editing one field never visibly disturbs any other.
+	 */
+	const isFieldBaked = (field: TextField): boolean => {
+		if (!liveRenderUrl || editingFieldId === field.id) return false;
+		const baked = bakedFields.find((f) => f.id === field.id);
+		return !!baked && fieldsVisuallyMatch(baked, field);
+	};
 
 	// Calculate actual image dimensions and scale
 	useEffect(() => {
@@ -318,7 +313,6 @@ const CertificatePreview = ({
 			const dy = e.clientY - dragStartPos.current.y;
 			if (Math.hypot(dx, dy) > TAP_DRAG_THRESHOLD_PX) {
 				hasMovedRef.current = true;
-				setIsDragging(true);
 			}
 		}
 		if (hasMovedRef.current) {
@@ -331,7 +325,6 @@ const CertificatePreview = ({
 		const fieldId = draggingId.current;
 		const wasTap = !hasMovedRef.current;
 		draggingId.current = null;
-		setIsDragging(false);
 		e.currentTarget.releasePointerCapture(e.pointerId);
 
 		if (!isMobile || !wasTap) return;
@@ -372,7 +365,6 @@ const CertificatePreview = ({
 			startHeight: field.height ?? 100,
 			isImage: !!field.imageUrl,
 		};
-		setIsDragging(true);
 		e.currentTarget.setPointerCapture(e.pointerId);
 	};
 
@@ -413,7 +405,6 @@ const CertificatePreview = ({
 
 	const handleResizePointerUp = (e: React.PointerEvent<HTMLSpanElement>) => {
 		resizeState.current = null;
-		setIsDragging(false);
 		e.currentTarget.releasePointerCapture(e.pointerId);
 	};
 
@@ -446,22 +437,22 @@ const CertificatePreview = ({
 					/>
 
 					{liveRenderUrl && (
-						// The actual backend-rendered certificate, crossfaded in
-						// whenever it's confirmed to match the current fields
-						// exactly (showBakedOverlay) — kept mounted at opacity 0
-						// otherwise so the fade is smooth and it's ready the
-						// instant editing goes idle again, rather than popping in.
-						<img
+						// The actual backend-rendered certificate. Shown at full
+						// opacity once we have one at all — per-field freshness
+						// (isFieldBaked) is what decides whether any given
+						// field's approximate content still needs to cover its
+						// corresponding region here, not this image's own
+						// visibility. initial/animate only plays once, on first
+						// mount, for a soft appearance rather than a pop-in;
+						// later src swaps (a fresh render) don't replay it.
+						<motion.img
 							src={liveRenderUrl}
 							alt=""
 							draggable={false}
-							className="absolute inset-0 h-full w-full object-contain pointer-events-none transition-opacity duration-500"
-							style={{
-								opacity: showBakedOverlay ? 1 : 0,
-								// Skip the fade when a drag forces this hidden — see
-								// the isDragging branch above for why.
-								transitionDuration: isDragging ? "0ms" : undefined,
-							}}
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							transition={{ duration: 0.4 }}
+							className="absolute inset-0 h-full w-full object-contain pointer-events-none"
 						/>
 					)}
 
@@ -475,6 +466,7 @@ const CertificatePreview = ({
 								isDraggable && isSelected && showDragHint;
 							const isImageField = !!field.imageUrl;
 							const isEditing = editingFieldId === field.id;
+							const fieldIsBaked = isFieldBaked(field);
 							return (
 								<motion.span
 									key={field.id}
@@ -573,16 +565,16 @@ const CertificatePreview = ({
 										/>
 									)}
 									{/* Content stays mounted (opacity, not removed) even
-									when the baked overlay is showing through — removing
-									it entirely would collapse this span to zero size
-									(nothing left to size an auto-width flex item by),
-									dragging the outline and resize handles in with it. */}
+									when this field's baked region is showing through —
+									removing it entirely would collapse this span to zero
+									size (nothing left to size an auto-width flex item
+									by), dragging the outline and resize handles in with
+									it. Per-field (fieldIsBaked), not a single flag for
+									the whole canvas, so editing one field never fades
+									any other. */}
 									<span
-										className="transition-opacity duration-500"
-										style={{
-											opacity: showBakedOverlay ? 0 : 1,
-											transitionDuration: isDragging ? "0ms" : undefined,
-										}}
+										className="transition-opacity duration-300"
+										style={{ opacity: fieldIsBaked ? 0 : 1 }}
 									>
 										{isImageField ? (
 											<img
