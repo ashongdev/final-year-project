@@ -97,48 +97,29 @@ const useTemplateManager = ({
 	/**
 	 * Renders the certificate exactly as the server would (same /generate/
 	 * pipeline used for real downloads), returning the resulting image blob.
-	 * Shared by "Generate" (download), "Preview" (view only), and "live"
-	 * (the editor's background auto-refresh — see GenerateThrottle on the
-	 * backend for why that purpose gets its own, much higher rate limit).
-	 * "live" calls fail silently (no toasts) since they're a background
-	 * nicety the user never explicitly asked for, not a user action.
-	 *
-	 * "live" also skips re-uploading the template file when it's already
-	 * been silently saved to Cloudinary (uploadedPublicId set — see
-	 * handleTemplateUpload), sending just the certificateId instead so the
-	 * backend fetches its own copy. Without that, every debounce tick during
-	 * active editing would re-upload the full template image for no reason,
-	 * since only field positions actually changed. The backend verifies the
-	 * caller owns that id (server/app/views/__init__.py's generate()), which
-	 * is why this now goes through `api` (cookies + CSRF) rather than a bare
-	 * axios call.
+	 * Shared by "Generate" (download) and "Preview" (view only).
 	 */
 	const generateCertificateBlob = async (
-		purpose: "download" | "preview" | "live" = "download",
+		purpose: "download" | "preview" = "download",
 	): Promise<Blob | null> => {
-		const silent = purpose === "live";
-		const canFetchByIdInstead = purpose === "live" && !!uploadedPublicId;
+		if (!hasTemplateSource(templateFile, templateUrl)) {
+			toast.error("Please upload a template first");
+			return null;
+		}
 
-		if (!canFetchByIdInstead && !hasTemplateSource(templateFile, templateUrl)) {
-			if (!silent) toast.error("Please upload a template first");
+		const resolvedFile = await resolveTemplateFile(templateFile, templateUrl);
+		if (!resolvedFile) {
+			toast.error("Failed to load the selected template");
 			return null;
 		}
 
 		const formData = new FormData();
-		if (!canFetchByIdInstead) {
-			const resolvedFile = await resolveTemplateFile(templateFile, templateUrl);
-			if (!resolvedFile) {
-				if (!silent) toast.error("Failed to load the selected template");
-				return null;
-			}
-			formData.append("template", resolvedFile);
-		}
+		formData.append("template", resolvedFile);
 		formData.append("fields", JSON.stringify(getVisibleFields(fields)));
 		formData.append("inEditor", "true");
 		formData.append("purpose", purpose);
 		// Lets the backend attribute this generation to the right template
-		// for analytics (and, for "live", is what it fetches the image by
-		// when the file itself wasn't sent — see canFetchByIdInstead above).
+		// for analytics.
 		if (uploadedPublicId) {
 			formData.append("certificateId", uploadedPublicId);
 		}
@@ -151,7 +132,6 @@ const useTemplateManager = ({
 			);
 			return response.data as Blob;
 		} catch (err) {
-			if (silent) return null;
 			const upgradeMessage = await extractUpgradeErrorFromBlob(err);
 			if (upgradeMessage) {
 				toast.error(upgradeMessage, {
@@ -194,25 +174,12 @@ const useTemplateManager = ({
 	};
 
 	/**
-	 * Same idea as handlePreview, but for the editor's background
-	 * auto-refresh: silent on failure, and tagged with purpose="live" so it
-	 * draws from a separate, higher rate-limit budget (see GenerateThrottle)
-	 * instead of competing with real downloads/generates.
-	 */
-	const handleLiveRender = async (): Promise<string | null> => {
-		const blob = await generateCertificateBlob("live");
-		if (!blob) return null;
-		return URL.createObjectURL(blob);
-	};
-
-	/**
 	 * Auto-saves the current field layout for the template already saved
 	 * under uploadedPublicId, so reopening it later restores exactly this,
 	 * not a blank/default field. Silent on failure — background nicety, not
-	 * a user-initiated action, same spirit as handleLiveRender. Deliberately
-	 * sends the raw, unfiltered `fields` (including hidden ones), since a
-	 * draft needs to reproduce the full editor state, not just what a
-	 * generated certificate would show.
+	 * a user-initiated action. Deliberately sends the raw, unfiltered
+	 * `fields` (including hidden ones), since a draft needs to reproduce the
+	 * full editor state, not just what a generated certificate would show.
 	 */
 	const handleSaveDraft = async (): Promise<void> => {
 		if (!uploadedPublicId) return;
@@ -478,7 +445,6 @@ const useTemplateManager = ({
 		handleDownload,
 		handleBatchDownload,
 		handlePreview,
-		handleLiveRender,
 		handleSaveDraft,
 		handleTemplateUpload,
 		handleFileSelect,

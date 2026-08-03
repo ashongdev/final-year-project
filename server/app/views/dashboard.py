@@ -322,9 +322,8 @@ def template_detail(request):
 @permission_classes([IsAuthenticated])
 def save_draft(request):
     """Auto-save the editor's current field layout for an owned template.
-    Called on a debounce as the organizer edits — see the frontend's
-    handleLiveRender for the same silent-on-failure pattern, since this is
-    a background nicety, not a user-initiated action."""
+    Called on a debounce as the organizer edits; silent on failure since
+    this is a background nicety, not a user-initiated action."""
     public_id = (request.data.get("public_id") or "").strip()
     if not public_id:
         return Response({"error": "public_id is required."}, status=400)

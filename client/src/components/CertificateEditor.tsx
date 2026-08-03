@@ -121,17 +121,6 @@ const CertificateEditor = ({
 	const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(
 		null,
 	);
-	// The editor canvas's background "show the real render while idle"
-	// layer — see handleLiveRender/GenerateThrottle. CertificatePreview
-	// compares bakedFields (below) against the live fields per-field, so a
-	// field with no pending changes keeps showing this even while a
-	// different field is being edited.
-	const [liveRenderUrl, setLiveRenderUrl] = useState<string | null>(null);
-	// Exactly which fields (and their state) liveRenderUrl was generated
-	// from — lets CertificatePreview show the accurate render per-field
-	// instead of all-or-nothing, so editing one field doesn't visibly
-	// "re-render" every other field that hasn't actually changed.
-	const [bakedFields, setBakedFields] = useState<TextField[]>([]);
 	const [mobileMenuFieldId, setMobileMenuFieldId] = useState<string | null>(
 		null,
 	);
@@ -169,7 +158,6 @@ const CertificateEditor = ({
 		handleTemplateUpload,
 		handleBatchDownload,
 		handlePreview,
-		handleLiveRender,
 		handleSaveDraft,
 		handleSignatureUpload,
 		uploadedPublicId,
@@ -196,9 +184,9 @@ const CertificateEditor = ({
 
 	// A template that arrived pre-loaded (Switch to Advanced/Simple, or
 	// restored after signing in from UnsavedProgressDialog) was never
-	// actually silently uploaded — without this, draft auto-save and the
-	// live-render bandwidth optimization both silently do nothing, since
-	// neither has an uploadedPublicId to work with yet. Ref-gated to the
+	// actually silently uploaded — without this, draft auto-save silently
+	// does nothing, since it has no uploadedPublicId to work with yet.
+	// Ref-gated to the
 	// file this component mounted with, so it can never fire again for a
 	// later, separate manual selection — handleFileSelect already uploads
 	// that directly, and racing both on the same file would double-upload.
@@ -232,43 +220,20 @@ const CertificateEditor = ({
 		armed: isSimple && !isAuthenticated && hasTemplate,
 	});
 
-	// Keeps the canvas showing the actual backend-rendered certificate for
-	// any field with no pending changes, instead of only the fast
-	// approximate live overlay CertificatePreview draws while editing —
-	// bakedFields (set alongside liveRenderUrl below) is what lets it do
-	// that per field rather than all-or-nothing.
+	// Debounced auto-save of the draft's field config, for signed-in users.
 	useEffect(() => {
-		if (!hasTemplate) return;
+		if (!hasTemplate || !isAuthenticated) return;
 
-		const timer = setTimeout(async () => {
-			const url = await handleLiveRender();
-			if (url) {
-				setLiveRenderUrl(url);
-				setBakedFields(fields);
-			}
-			// Piggybacks on the same settle tick rather than running its own
-			// competing debounce — a no-op (returns immediately) until
-			// there's an uploadedPublicId to save against.
-			if (isAuthenticated) {
-				void handleSaveDraft();
-			}
+		const timer = setTimeout(() => {
+			void handleSaveDraft();
 		}, 600);
 
 		return () => clearTimeout(timer);
-		// handleLiveRender/handleSaveDraft close over fields/templateFile/
-		// templateUrl/uploadedPublicId fresh each render, so they don't need
-		// to be listed themselves.
+		// handleSaveDraft closes over fields/templateFile/templateUrl/
+		// uploadedPublicId fresh each render, so it doesn't need to be
+		// listed itself.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [fields, templateFile, templateUrl, hasTemplate, isAuthenticated]);
-
-	// Revokes the previous object URL whenever a fresh one replaces it, and
-	// the last one on unmount — same cleanup shape used for templateUrl in
-	// useTemplateManager.
-	useEffect(() => {
-		return () => {
-			if (liveRenderUrl) URL.revokeObjectURL(liveRenderUrl);
-		};
-	}, [liveRenderUrl]);
 
 	// Keeps the URL's ?id= in sync with whatever template is actually
 	// loaded, so refreshing or sharing the link comes back to the same
@@ -764,8 +729,6 @@ const CertificateEditor = ({
 								showDragHint={showDragHint}
 								isMobile={isMobile}
 								onOpenFieldMenu={handleOpenFieldMenu}
-								liveRenderUrl={liveRenderUrl}
-								bakedFields={bakedFields}
 							/>
 						</div>
 					</ScrollArea>

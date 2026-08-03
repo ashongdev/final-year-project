@@ -479,11 +479,10 @@ def generate(request):
     data = request.data
     public_id = data.get("certificateId", "").strip()
     in_editor = data.get("inEditor") == "true"
-    # "preview" (the editor's Preview button) and "live" (the editor's
-    # background auto-refresh, see GenerateThrottle) reuse this same
-    # endpoint but shouldn't count as a real issuance. Anything else —
-    # including the editor's own Download button and the public participant
-    # link, which doesn't send this field at all — defaults to counting.
+    # "preview" (the editor's Preview button) reuses this same endpoint but
+    # shouldn't count as a real issuance. Anything else — including the
+    # editor's own Download button and the public participant link, which
+    # doesn't send this field at all — defaults to counting.
     purpose = data.get("purpose", "download")
 
     fields = parse_json_field(data.get("fields"), [])
@@ -518,26 +517,6 @@ def generate(request):
                 image = Image.open(template_file).convert("RGBA")
             except Exception:
                 return Response({"error": "Could not open template image."}, status=400)
-        elif public_id:
-            # The editor's background "live" auto-refresh (see
-            # GenerateThrottle): the organizer's own draft was already
-            # uploaded once via /upload/, so instead of re-uploading the
-            # full file on every debounce tick, subsequent renders fetch it
-            # by id. Ownership must be checked explicitly here — unlike the
-            # public participant path below, there's no recipient/self-serve
-            # gating for this path, so it must never be reachable for a
-            # template that isn't the caller's own (public_ids are exposed
-            # in shareable participant links, so they're not secret).
-            if not request.user.is_authenticated:
-                return Response({"error": "Authentication required."}, status=401)
-            owns_template = Templates.objects.filter(
-                public_id=public_id, user=request.user
-            ).exists()
-            if not owns_template:
-                return Response({"error": "Template not found."}, status=404)
-            image, err = _fetch_template_image_by_id(public_id)
-            if err:
-                return err
         else:
             return Response({"error": "Template file is required in editor mode."}, status=400)
     else:
@@ -564,11 +543,11 @@ def generate(request):
         logger.exception("Image processing failed: %s", exc)
         return Response({"error": "Certificate generation failed."}, status=500)
 
-    if purpose not in ("preview", "live") and public_id:
+    if purpose != "preview" and public_id:
         # Count against a published template whenever we can attribute this
         # generation to one — the public participant link (always has a
-        # public_id, never "preview"/"live"), and the editor's own Download
-        # button once a template has been uploaded/published. A brand-new,
+        # public_id, never "preview"), and the editor's own Download button
+        # once a template has been uploaded/published. A brand-new,
         # never-uploaded draft has no public_id yet, so there's nothing to
         # attribute it to and it's correctly skipped. in_editor distinguishes
         # the organizer downloading their own copy from an actual recipient

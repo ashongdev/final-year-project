@@ -6,28 +6,6 @@ import { MoreVertical } from "lucide-react";
 import { RefObject, useEffect, useRef, useState } from "react";
 
 /**
- * Whether `field`'s visible state exactly matches what was baked into the
- * current liveRenderUrl (see `baked` below) — every property that could
- * change what actually gets drawn, not just position. Used to decide,
- * per field, whether it's safe to show the real backend render for that
- * field instead of the approximate live one.
- */
-const fieldsVisuallyMatch = (a: TextField, b: TextField): boolean =>
-	a.text === b.text &&
-	a.x === b.x &&
-	a.y === b.y &&
-	a.font === b.font &&
-	a.fontSize === b.fontSize &&
-	a.fontWeight === b.fontWeight &&
-	a.color === b.color &&
-	a.anchorMode === b.anchorMode &&
-	a.hidden === b.hidden &&
-	a.imageUrl === b.imageUrl &&
-	a.width === b.width &&
-	a.height === b.height &&
-	a.required === b.required;
-
-/**
  * Renders field text from HarfBuzz-shaped glyph outlines (see
  * lib/textShaping.ts) instead of a plain DOM text node — the browser's own
  * text-layout algorithm doesn't reliably agree with Pillow/FreeType's (see
@@ -131,18 +109,6 @@ interface CertificatePreviewProps {
 	 * category list instead).
 	 */
 	onOpenFieldMenu?: (id: string, category?: "date" | "signature") => void;
-	/**
-	 * A recent backend-rendered PNG of the current template+fields (see
-	 * CertificateEditor's debounced handleLiveRender). Shown per field, in
-	 * place of that field's approximate live content, wherever bakedFields
-	 * confirms that specific field hasn't changed since this was generated
-	 * — so editing one field doesn't visibly affect any other. Optional —
-	 * both omitted entirely outside the organizer editor (e.g. the
-	 * read-only participant view).
-	 */
-	liveRenderUrl?: string | null;
-	/** The fields liveRenderUrl was actually generated from — see CertificateEditor. */
-	bakedFields?: TextField[];
 }
 
 const TAP_DRAG_THRESHOLD_PX = 6;
@@ -181,8 +147,6 @@ const CertificatePreview = ({
 	showDragHint = false,
 	isMobile = false,
 	onOpenFieldMenu,
-	liveRenderUrl = null,
-	bakedFields = [],
 }: CertificatePreviewProps) => {
 	const [imageScale, setImageScale] = useState({
 		scale: 1,
@@ -209,22 +173,6 @@ const CertificatePreview = ({
 	const dragStartPos = useRef<{ x: number; y: number } | null>(null);
 	const hasMovedRef = useRef(false);
 	const wasAlreadySelectedRef = useRef(false);
-
-	/**
-	 * Whether `field` can show the real backend render instead of its
-	 * approximate live content — true only when we have a baked image AND
-	 * that specific field's current state exactly matches what was baked
-	 * into it (bakedFields) AND it isn't the field currently being
-	 * inline-edited (which never touches `fields`, hence wouldn't
-	 * otherwise be caught by the bakedFields comparison, until committed
-	 * on blur). Per-field rather than a single global flag, so dragging or
-	 * editing one field never visibly disturbs any other.
-	 */
-	const isFieldBaked = (field: TextField): boolean => {
-		if (!liveRenderUrl || editingFieldId === field.id) return false;
-		const baked = bakedFields.find((f) => f.id === field.id);
-		return !!baked && fieldsVisuallyMatch(baked, field);
-	};
 
 	// Calculate actual image dimensions and scale
 	useEffect(() => {
@@ -436,26 +384,6 @@ const CertificatePreview = ({
 						draggable={false}
 					/>
 
-					{liveRenderUrl && (
-						// The actual backend-rendered certificate. Shown at full
-						// opacity once we have one at all — per-field freshness
-						// (isFieldBaked) is what decides whether any given
-						// field's approximate content still needs to cover its
-						// corresponding region here, not this image's own
-						// visibility. initial/animate only plays once, on first
-						// mount, for a soft appearance rather than a pop-in;
-						// later src swaps (a fresh render) don't replay it.
-						<motion.img
-							src={liveRenderUrl}
-							alt=""
-							draggable={false}
-							initial={{ opacity: 0 }}
-							animate={{ opacity: 1 }}
-							transition={{ duration: 0.4 }}
-							className="absolute inset-0 h-full w-full object-contain pointer-events-none"
-						/>
-					)}
-
 					{showPreview &&
 						fields &&
 						fields?.length &&
@@ -466,7 +394,6 @@ const CertificatePreview = ({
 								isDraggable && isSelected && showDragHint;
 							const isImageField = !!field.imageUrl;
 							const isEditing = editingFieldId === field.id;
-							const fieldIsBaked = isFieldBaked(field);
 							return (
 								<motion.span
 									key={field.id}
@@ -564,18 +491,7 @@ const CertificatePreview = ({
 											style={{ position: "absolute", inset: "-6px -10px" }}
 										/>
 									)}
-									{/* Content stays mounted (opacity, not removed) even
-									when this field's baked region is showing through —
-									removing it entirely would collapse this span to zero
-									size (nothing left to size an auto-width flex item
-									by), dragging the outline and resize handles in with
-									it. Per-field (fieldIsBaked), not a single flag for
-									the whole canvas, so editing one field never fades
-									any other. */}
-									<span
-										className="transition-opacity duration-300"
-										style={{ opacity: fieldIsBaked ? 0 : 1 }}
-									>
+									<span>
 										{isImageField ? (
 											<img
 												src={field.imageUrl}
