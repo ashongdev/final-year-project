@@ -6,10 +6,10 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import AnalyticsTracker from "./components/AnalyticsTracker";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ProtectedRoute from "./components/ProtectedRoute";
+import RequireProRoute from "./components/RequireProRoute";
 import { AuthProvider } from "./context/AuthContext";
 import Advanced from "./pages/Advanced";
 import Editor from "./pages/Editor";
-import GoogleCallback from "./pages/GoogleCallback";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Marketplace from "./pages/Marketplace";
@@ -17,8 +17,6 @@ import NotFound from "./pages/NotFound";
 import Participant from "./pages/Participant";
 import Pricing from "./pages/Pricing";
 import Signup from "./pages/Signup";
-import DashboardLayout from "./pages/dashboard/DashboardLayout";
-import RequireProRoute from "./components/RequireProRoute";
 
 // Instantiated once, outside the component tree so it survives re-renders.
 const queryClient = new QueryClient({
@@ -55,20 +53,20 @@ const App = () => (
 								}
 							/>
 							<Route path="/participant" element={<Participant />} />
-							<Route
-								path="/auth/google/callback"
-								element={<GoogleCallback />}
-							/>
+							{/* //<Route */}
+								{/* // path="/auth/google/callback" */}
+								{/* // element={<GoogleCallback />} */}
+							{/* // /> */}
 							<Route path="/login" element={<Login />} />
 							<Route path="/signup" element={<Signup />} />
-							<Route
+							{/*<Route
 								path="/dashboard/*"
 								element={
 									<ProtectedRoute>
 										<DashboardLayout />
 									</ProtectedRoute>
 								}
-							/>
+							/>*/}
 							<Route path="*" element={<NotFound />} />
 						</Routes>
 					</ErrorBoundary>
