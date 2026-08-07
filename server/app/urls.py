@@ -27,6 +27,14 @@ from .views.dashboard import (
     set_template_state,
     template_detail,
 )
+from .views.auth import (
+    login_view,
+    password_reset_confirm,
+    password_reset_request,
+    register,
+    resend_verification,
+    verify_email,
+)
 from .views.participant import (
     request_verification_code,
     save_recipients,
@@ -62,6 +70,12 @@ urlpatterns = [
     path("auth/google/", GoogleLogin.as_view(), name="google_login"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("auth/register/", register, name="register"),
+    path("auth/verify-email/", verify_email, name="verify_email"),
+    path("auth/resend-verification/", resend_verification, name="resend_verification"),
+    path("auth/login/", login_view, name="login"),
+    path("auth/password-reset/request/", password_reset_request, name="password_reset_request"),
+    path("auth/password-reset/confirm/", password_reset_confirm, name="password_reset_confirm"),
     # Certificate
     path("upload/", upload, name="upload"),
     path("upload-signature/", upload_signature, name="upload_signature"),

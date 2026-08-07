@@ -9,3 +9,8 @@ class GenerateThrottle(AnonRateThrottle):
 class VerificationThrottle(AnonRateThrottle):
     """Throttle for recipient email verification — limits code-request/guess spam."""
     scope = "verification"
+
+
+class AuthThrottle(AnonRateThrottle):
+    """Throttle for account registration/login/password-reset-request — limits brute-force and spam."""
+    scope = "auth"

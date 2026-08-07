@@ -9,6 +9,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import Advanced from "./pages/Advanced";
 import Editor from "./pages/Editor";
+import ForgotPassword from "./pages/ForgotPassword";
 import GoogleCallback from "./pages/GoogleCallback";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
@@ -16,7 +17,9 @@ import Marketplace from "./pages/Marketplace";
 import NotFound from "./pages/NotFound";
 import Participant from "./pages/Participant";
 import Pricing from "./pages/Pricing";
+import ResetPassword from "./pages/ResetPassword";
 import Signup from "./pages/Signup";
+import VerifyEmail from "./pages/VerifyEmail";
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
 import RequireProRoute from "./components/RequireProRoute";
 
@@ -61,6 +64,15 @@ const App = () => (
 							/>
 							<Route path="/login" element={<Login />} />
 							<Route path="/signup" element={<Signup />} />
+							<Route path="/verify-email" element={<VerifyEmail />} />
+							<Route
+								path="/forgot-password"
+								element={<ForgotPassword />}
+							/>
+							<Route
+								path="/reset-password"
+								element={<ResetPassword />}
+							/>
 							<Route
 								path="/dashboard/*"
 								element={

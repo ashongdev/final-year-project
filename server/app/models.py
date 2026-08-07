@@ -276,6 +276,37 @@ class RecipientVerification(models.Model):
         return f"Verification for {self.email} on template {self.template_id}"
 
 
+class AccountVerification(models.Model):
+    """A short-lived, single-use email verification code for account signup
+    or password reset. Same shape as RecipientVerification, for a different
+    purpose (verifying account ownership rather than a certificate
+    recipient)."""
+
+    class Purpose(models.TextChoices):
+        SIGNUP = "signup", "Signup"
+        PASSWORD_RESET = "password_reset", "Password Reset"
+
+    MAX_ATTEMPTS = 5
+
+    email = models.EmailField(db_index=True)
+    purpose = models.CharField(max_length=20, choices=Purpose.choices)
+    code = models.CharField(max_length=6, default=_generate_verification_code)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    consumed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(default=_default_expiry)
+
+    def is_valid(self) -> bool:
+        return (
+            not self.consumed
+            and self.attempts < self.MAX_ATTEMPTS
+            and timezone.now() < self.expires_at
+        )
+
+    def __str__(self):
+        return f"{self.purpose} verification for {self.email}"
+
+
 class Subscription(models.Model):
     """
     A user's billing state. Kept in sync with Stripe via webhooks, not read

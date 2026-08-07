@@ -211,6 +211,7 @@ REST_FRAMEWORK = {
         "user": getenv("THROTTLE_RATE_USER", "300/hour"),
         "generate": getenv("THROTTLE_RATE_GENERATE", "30/hour"),
         "verification": getenv("THROTTLE_RATE_VERIFICATION", "10/hour"),
+        "auth": getenv("THROTTLE_RATE_AUTH", "20/hour"),
     },
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "EXCEPTION_HANDLER": "app.exceptions.custom_exception_handler",

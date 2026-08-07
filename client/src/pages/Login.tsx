@@ -6,10 +6,22 @@ import GoogleSvg from "@/components/ui/GoogleSvg";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import useAuth from "@/hooks/useAuth";
-import { stashPostLoginRedirect } from "@/lib/postLoginRedirect";
+import { useAuthContext } from "@/hooks/useAuthContext";
+import { restorePendingSession } from "@/lib/pendingSession";
+import {
+	consumePostLoginRedirect,
+	stashPostLoginRedirect,
+} from "@/lib/postLoginRedirect";
+import { loginWithPassword } from "@/services/authApi";
 import { Eye, EyeOff } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useLocation, type Location } from "react-router-dom";
+import { toast } from "sonner";
+import {
+	Link,
+	useLocation,
+	useNavigate,
+	type Location,
+} from "react-router-dom";
 
 const fieldClass =
 	"rounded-none border-x-0 border-t-0 border-b-2 border-foreground/30 bg-transparent px-0 text-base focus-visible:border-primary focus-visible:ring-0";
@@ -18,8 +30,11 @@ const Login = () => {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [showPassword, setShowPassword] = useState(false);
+	const [submitting, setSubmitting] = useState(false);
 	const { handleGoogleLogin } = useAuth();
+	const { BASE_URL, refreshAuth } = useAuthContext();
 	const location = useLocation();
+	const navigate = useNavigate();
 
 	// ProtectedRoute's own "Sign In" link (and UnsavedProgressDialog's) both
 	// set this — stash it now since the Google OAuth round-trip is a
@@ -30,10 +45,40 @@ const Login = () => {
 		if (from) stashPostLoginRedirect(from);
 	}, [location.state]);
 
-	const handleSubmit = (e: React.FormEvent) => {
+	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		// TODO: Implement authentication logic
-		console.log("Login:", { email, password });
+		setSubmitting(true);
+		try {
+			await loginWithPassword(BASE_URL, email, password);
+			await refreshAuth();
+
+			// Mirrors GoogleCallback.tsx's post-login flow, so a guest who
+			// chose "Sign In" from UnsavedProgressDialog (which stashes a
+			// pending session before redirecting here) gets it restored
+			// regardless of which auth method they end up using.
+			const redirectPath = consumePostLoginRedirect() ?? "/dashboard";
+			const session = await restorePendingSession();
+			if (session) {
+				navigate(redirectPath, {
+					state: {
+						fields: session.fields,
+						recipients: session.recipients,
+						templateUseMode: session.templateUseMode,
+						templateUrl: session.templateUrl,
+						templateFile: session.templateFile,
+					},
+				});
+			} else {
+				navigate(redirectPath);
+			}
+		} catch (err) {
+			const message =
+				(err as { response?: { data?: { error?: string } } })?.response
+					?.data?.error ?? "Login failed. Please try again.";
+			toast.error(message);
+		} finally {
+			setSubmitting(false);
+		}
 	};
 
 	const handleGithubLogin = () => {
@@ -155,9 +200,10 @@ const Login = () => {
 
 						<Button
 							type="submit"
+							disabled={submitting}
 							className="h-11 w-full font-semibold uppercase tracking-widest"
 						>
-							Sign In
+							{submitting ? "Signing In..." : "Sign In"}
 						</Button>
 					</form>
 
