@@ -6,6 +6,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import AnalyticsTracker from "./components/AnalyticsTracker";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ProtectedRoute from "./components/ProtectedRoute";
+import RequireProRoute from "./components/RequireProRoute";
 import { AuthProvider } from "./context/AuthContext";
 import Advanced from "./pages/Advanced";
 import Editor from "./pages/Editor";
@@ -21,7 +22,6 @@ import ResetPassword from "./pages/ResetPassword";
 import Signup from "./pages/Signup";
 import VerifyEmail from "./pages/VerifyEmail";
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
-import RequireProRoute from "./components/RequireProRoute";
 
 // Instantiated once, outside the component tree so it survives re-renders.
 const queryClient = new QueryClient({
@@ -59,9 +59,8 @@ const App = () => (
 							/>
 							<Route path="/participant" element={<Participant />} />
 							<Route
-								path="/auth/google/callback"
-								element={<GoogleCallback />}
-							/>
+								path="/auth/google/callback" 
+								 element={<GoogleCallback />}/> 
 							<Route path="/login" element={<Login />} />
 							<Route path="/signup" element={<Signup />} />
 							<Route path="/verify-email" element={<VerifyEmail />} />
